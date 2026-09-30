@@ -1,0 +1,1033 @@
+<title>توزيع مصروفات الورشة</title>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f1e8;
+  --surface: #ffffff;
+  --surface-2: #faf7f0;
+  --ink: #1c2430;
+  --ink-muted: #5d6773;
+  --ink-faint: #8b93a0;
+  --border: #ddd4c2;
+  --border-soft: #eae3d3;
+
+  --steel-50:  #e8eff5;
+  --steel-300: #7fa3bf;
+  --steel-500: #3d6f92;
+  --steel-700: #24506e;
+  --steel-900: #14293a;
+
+  --amber-50:  #f8ecdd;
+  --amber-300: #cf9a5c;
+  --amber-500: #b06a2e;
+  --amber-700: #7c481d;
+  --amber-900: #4a2a0f;
+
+  --other: #9d9382;
+  --other-dark: #6f6656;
+
+  --series-exp: #2a78d6;
+  --series-debit: #eb6834;
+  --series-credit: #1baf7a;
+  --series-balance: #4a3aa7;
+
+  --tooltip-bg: #1c2430;
+  --tooltip-ink: #f5f1e8;
+
+  --shadow: 0 1px 2px rgba(28,36,48,.06), 0 8px 24px -12px rgba(28,36,48,.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14181e;
+    --surface: #1b2129;
+    --surface-2: #202832;
+    --ink: #ecebe6;
+    --ink-muted: #a3ada6;
+    --ink-faint: #737f78;
+    --border: #323b45;
+    --border-soft: #262e37;
+
+    --steel-50:  #223648;
+    --steel-300: #33424e;
+    --steel-500: #6ea0c2;
+    --steel-700: #94bfdc;
+    --steel-900: #4fa8e0;
+
+    --amber-50:  #3a2a18;
+    --amber-300: #4a3826;
+    --amber-500: #c1873f;
+    --amber-700: #d9ab6f;
+    --amber-900: #e8973f;
+
+    --other: #85796a;
+    --other-dark: #b2a793;
+
+    --series-exp: #3987e5;
+    --series-debit: #d95926;
+    --series-credit: #199e70;
+    --series-balance: #9085e9;
+
+    --tooltip-bg: #ecebe6;
+    --tooltip-ink: #14181e;
+
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"] {
+  --series-exp: #3987e5;
+  --series-debit: #d95926;
+  --series-credit: #199e70;
+  --series-balance: #9085e9;
+  --bg: #14181e;
+  --surface: #1b2129;
+  --surface-2: #202832;
+  --ink: #ecebe6;
+  --ink-muted: #a3ada6;
+  --ink-faint: #737f78;
+  --border: #323b45;
+  --border-soft: #262e37;
+
+  --steel-50:  #223648;
+  --steel-300: #33424e;
+  --steel-500: #6ea0c2;
+  --steel-700: #94bfdc;
+  --steel-900: #4fa8e0;
+
+  --amber-50:  #3a2a18;
+  --amber-300: #4a3826;
+  --amber-500: #c1873f;
+  --amber-700: #d9ab6f;
+  --amber-900: #e8973f;
+
+  --other: #85796a;
+  --other-dark: #b2a793;
+
+  --tooltip-bg: #ecebe6;
+  --tooltip-ink: #14181e;
+
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+  direction: rtl;
+  padding-inline: max(16px, 4vw);
+  padding-block: 32px 56px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; }
+
+.num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+
+/* ── Header ───────────────────────────────────────────────── */
+header { margin-bottom: 28px; }
+.eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: .06em;
+  color: var(--steel-500); text-transform: uppercase;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.eyebrow::before { content: ''; width: 20px; height: 2px; background: var(--steel-500); border-radius: 2px; }
+h1 {
+  font-size: clamp(24px, 3.4vw, 34px); font-weight: 800; margin: 0 0 8px;
+  text-wrap: balance; letter-spacing: -.01em;
+}
+.subhead {
+  font-size: 14.5px; color: var(--ink-muted); line-height: 1.7; max-width: 62ch;
+}
+.subhead .num { color: var(--ink); font-weight: 600; }
+
+.stat-strip {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px;
+}
+.stat-pill {
+  background: var(--surface); border: 1px solid var(--border-soft);
+  border-radius: 12px; padding: 12px 18px; box-shadow: var(--shadow);
+  flex: 1 1 160px; min-width: 150px;
+}
+.stat-pill .k { font-size: 11px; color: var(--ink-faint); font-weight: 600; margin-bottom: 4px; }
+.stat-pill .v { font-size: 19px; font-weight: 700; }
+.stat-pill .v.steel { color: var(--steel-500); }
+.stat-pill .v.amber { color: var(--amber-500); }
+
+/* ── Treemap panel ────────────────────────────────────────── */
+.panel {
+  background: var(--surface); border: 1px solid var(--border-soft);
+  border-radius: 16px; padding: 22px 22px 18px; box-shadow: var(--shadow);
+  margin-top: 24px;
+}
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.panel-head h2 { font-size: 16px; font-weight: 700; margin: 0; }
+.panel-head .hint { font-size: 12px; color: var(--ink-faint); }
+
+#tmap-holder { position: relative; width: 100%; }
+#tmap-holder svg { display: block; width: 100%; height: auto; }
+
+#month-bar-holder, #month-line-holder, #bank-line-holder { position: relative; width: 100%; }
+#month-bar-holder svg, #month-line-holder svg, #bank-line-holder svg { display: block; width: 100%; height: auto; }
+.series-legend { display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 10px; }
+.series-key { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-muted); }
+.series-swatch { width: 18px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+.series-swatch.dashed { background: repeating-linear-gradient(to left, var(--c) 0 5px, transparent 5px 8px); }
+.chart-note { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft); font-size: 12px; color: var(--ink-faint); line-height: 1.8; }
+.chart-note b { color: var(--ink-muted); }
+.tt-row .tt-key { display: inline-flex; align-items: center; gap: 6px; }
+.tt-row .tt-key i { width: 10px; height: 3px; border-radius: 2px; display: inline-block; }
+.month-bar-rect { cursor: pointer; transition: filter .12s ease; }
+.month-bar-rect:hover { filter: brightness(1.08); }
+.month-axis-label { font-family: 'Cairo', sans-serif; }
+.month-axis-value { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; direction: ltr; }
+.month-grid-line { stroke: var(--border-soft); stroke-width: 1; }
+.month-line-path { fill: none; stroke: var(--steel-500); stroke-width: 2.5; }
+.month-line-area { fill: var(--steel-500); opacity: .08; }
+.month-line-dot { fill: var(--surface); stroke: var(--steel-500); stroke-width: 2.5; cursor: pointer; }
+.month-line-dot:hover { fill: var(--steel-500); }
+
+.tile-label { font-family: 'Cairo', sans-serif; font-weight: 600; pointer-events: none; }
+.tile-value { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; pointer-events: none; direction: ltr; }
+.tile-rect { cursor: pointer; transition: filter .12s ease; }
+.tile-rect:hover { filter: brightness(1.08); }
+.tile-rect:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+
+/* ── Legend ───────────────────────────────────────────────── */
+.legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-muted); }
+.legend-swatch { width: 34px; height: 12px; border-radius: 4px; flex-shrink: 0; }
+.legend-swatch.ramp-steel { background: linear-gradient(to left, var(--steel-900), var(--steel-300)); }
+.legend-swatch.ramp-amber { background: linear-gradient(to left, var(--amber-900), var(--amber-300)); }
+.legend-swatch.solid-other { background: var(--other); }
+.legend-item b { color: var(--ink); font-weight: 700; }
+
+/* ── Tooltip ──────────────────────────────────────────────── */
+#tooltip {
+  position: fixed; pointer-events: none; z-index: 50;
+  background: var(--tooltip-bg); color: var(--tooltip-ink);
+  border-radius: 10px; padding: 10px 13px; font-size: 12.5px;
+  box-shadow: 0 12px 32px -10px rgba(0,0,0,.4);
+  opacity: 0; transform: translateY(4px); transition: opacity .1s ease, transform .1s ease;
+  max-width: 260px;
+}
+#tooltip.show { opacity: 1; transform: translateY(0); }
+#tooltip .tt-title { font-weight: 700; margin-bottom: 5px; font-size: 13.5px; }
+#tooltip .tt-row { display: flex; justify-content: space-between; gap: 14px; opacity: .88; }
+#tooltip .tt-row + .tt-row { margin-top: 2px; }
+#tooltip .tt-note { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(128,128,128,.3); opacity: .75; font-size: 11.5px; }
+
+/* ── Table ────────────────────────────────────────────────── */
+.table-panel { margin-top: 18px; }
+.table-scroll { overflow-x: auto; border: 1px solid var(--border-soft); border-radius: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--surface); min-width: 640px; }
+thead th {
+  text-align: right; font-size: 11px; font-weight: 700; color: var(--ink-faint);
+  text-transform: uppercase; letter-spacing: .04em;
+  padding: 12px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border-soft);
+  position: sticky; top: 0;
+}
+thead th.num-col, tbody td.num-col { text-align: left; }
+tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--surface-2); }
+.rank { color: var(--ink-faint); font-weight: 600; }
+.src-name { font-weight: 600; }
+.badge {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px;
+}
+.badge.single { background: var(--steel-50); color: var(--steel-700); }
+.badge.compound { background: var(--amber-50); color: var(--amber-700); }
+.badge.other { background: var(--surface-2); color: var(--ink-muted); border: 1px solid var(--border-soft); }
+.badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.share-bar-wrap { display:flex; align-items:center; gap:8px; }
+.share-bar-track { flex:1; height:6px; border-radius:4px; background: var(--surface-2); overflow:hidden; min-width:50px; }
+.share-bar-fill { height: 100%; border-radius: 4px; }
+
+footer.note { margin-top: 22px; font-size: 12px; color: var(--ink-faint); line-height: 1.8; }
+
+/* ── Raw data by month ────────────────────────────────────────────── */
+.month-chip-row { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 16px; }
+.month-chip {
+  display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-muted);
+  background: var(--surface-2); border: 1px solid var(--border-soft);
+  border-radius: 20px; padding: 5px 12px 5px 10px;
+}
+.dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+tr.month-divider td {
+  background: var(--surface-2); font-weight: 700; font-size: 12.5px;
+  padding: 10px 14px; border-bottom: 1px solid var(--border-soft);
+  border-top: 1px solid var(--border-soft); color: var(--ink);
+}
+tr.month-divider:first-child td { border-top: none; }
+tr.raw-row td { padding-top: 7px; padding-bottom: 7px; }
+tr.raw-row .src-cell { color: var(--ink-muted); font-size: 12.5px; }
+tr.raw-row .month-dot-cell { width: 26px; padding-inline-end: 0; }
+
+@media (max-width: 640px) {
+  .panel { padding: 16px 14px 14px; }
+  thead th, tbody td { padding: 9px 10px; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">سجل مصروفات يومية · ورشة تشغيل معادن</div>
+    <h1>تحليل المصروفات الشهرية</h1>
+    <div class="subhead">
+      تجميع <span class="num" id="hdr-rows">—</span> بندًا من <span class="num" id="hdr-sheets">—</span> كشف مصروفات اسبوعية،
+      من <b id="hdr-from">—</b> إلى <b id="hdr-to">—</b>، حسب مصدر الصرف بالضبط كما كُتب في كل كشف —
+      فتُحسب "محمود عثمان" وحدها بمعزل عن "محمود عثمان، خامات" كسطرين مختلفين، تمامًا كما يميّزهما دفتر الكشوف نفسه.
+    </div>
+    <div class="stat-strip">
+      <div class="stat-pill"><div class="k">إجمالي المصروفات</div><div class="v num" id="stat-total">—</div></div>
+      <div class="stat-pill"><div class="k">أكبر بند منفرد</div><div class="v steel" id="stat-top">—</div></div>
+      <div class="stat-pill"><div class="k">مجموع تكلفة العمالة: أجور عمال، أجور موظفين، مصروف عمال، قبض العيد</div><div class="v amber" id="stat-labor">—</div></div>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>إجمالي المصروفات حسب الشهر</h2>
+      <div class="hint">كل شهر بلونه من الجدول أدناه · مرّر المؤشر على أي عمود لتفاصيله</div>
+    </div>
+    <div id="month-bar-holder"><svg id="month-bar-svg" viewBox="0 0 1000 380" preserveAspectRatio="xMidYMid meet"></svg></div>
+  </section>
+
+  <section class="panel" style="margin-top: 22px;">
+    <div class="panel-head">
+      <h2>النمو التراكمي للمصروفات</h2>
+      <div class="hint">كل نقطة = إجمالي المصروفات منذ بداية السنة حتى نهاية ذلك الشهر</div>
+    </div>
+    <div id="month-line-holder"><svg id="month-line-svg" viewBox="0 0 1000 340" preserveAspectRatio="xMidYMid meet"></svg></div>
+  </section>
+
+  <section class="panel" style="margin-top: 22px;">
+    <div class="panel-head">
+      <h2>المصروفات مقابل حركة البنك</h2>
+      <div class="hint">مرّر المؤشر على أي شهر لمقارنة القيم الأربع · الخط المتقطع رصيد وليس حركة</div>
+    </div>
+    <div class="series-legend">
+      <span class="series-key"><span class="series-swatch" style="background:var(--series-exp)"></span>المصروفات (الكشوف)</span>
+      <span class="series-key"><span class="series-swatch" style="background:var(--series-debit)"></span>مسحوبات البنك (مدين)</span>
+      <span class="series-key"><span class="series-swatch" style="background:var(--series-credit)"></span>إيداعات البنك (دائن)</span>
+      <span class="series-key"><span class="series-swatch dashed" style="--c:var(--series-balance)"></span>رصيد البنك في نهاية الشهر</span>
+    </div>
+    <div id="bank-line-holder"><svg id="bank-line-svg" viewBox="0 0 1000 380" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div class="chart-note">
+      كشوف البنك المتاحة تبدأ من <b>8 فبراير</b> وتنتهي في <b>31 أغسطس 2026</b> — لذلك يظهر يناير وسبتمبر بدون خطوط للبنك (لا توجد بيانات، وليس صفرًا)،
+      ورقم فبراير للبنك جزئي (يبدأ من 8 فبراير).
+    </div>
+  </section>
+
+  <section class="table-panel" style="margin-top: 22px;">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:26px"></th>
+            <th>الشهر</th>
+            <th class="num-col">المبلغ الشهري</th>
+            <th class="num-col">المبلغ المتراكم</th>
+            <th style="width:160px">نسبة من إجمالي السنة</th>
+          </tr>
+        </thead>
+        <tbody id="month-tbl-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top: 22px;">
+    <div class="panel-head">
+      <h2>خريطة المصروفات حسب المصدر</h2>
+      <div class="hint">مساحة كل مستطيل = حجم المبلغ · مرّر المؤشر لتفاصيل كل مصدر</div>
+    </div>
+    <div id="tmap-holder"><svg id="tmap-svg" viewBox="0 0 1000 520" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch ramp-steel"></span> مصدر واحد بعينه <span style="opacity:.7">— كلما غمُق الأزرق زاد المبلغ</span></div>
+      <div class="legend-item"><span class="legend-swatch ramp-amber"></span> مصادر مركّبة (بند مسجَّل على أكثر من مصدر معًا)</div>
+      <div class="legend-item"><span class="legend-swatch solid-other"></span> "مصروفات مجمعة" <span style="opacity:.7">— أصغر <b id="legend-n-other">—</b> مصدرًا مجتمعة في مستطيل واحد</span></div>
+    </div>
+  </section>
+
+  <section class="table-panel">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:44px">#</th>
+            <th>المصدر</th>
+            <th>النوع</th>
+            <th class="num-col">المبلغ</th>
+            <th class="num-col">عدد البنود</th>
+            <th style="width:160px">الحصة من الإجمالي</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top: 22px;">
+    <div class="panel-head">
+      <h2>البيانات الأصلية، بندًا بندًا</h2>
+      <div class="hint">كل الـ<span class="num" id="raw-count">—</span> بندًا كما وردت في ملف التصدير، مرتّبة زمنيًا ومقسّمة حسب شهر الكشف</div>
+    </div>
+    <div class="month-chip-row" id="month-chips"></div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:26px"></th>
+            <th>الكشف</th>
+            <th>التاريخ</th>
+            <th>البند</th>
+            <th>المصدر</th>
+            <th class="num-col">المبلغ</th>
+            <th>الحالة</th>
+          </tr>
+        </thead>
+        <tbody id="raw-tbl-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="note">
+    محسوبة مباشرة من ملف تصدير المصروفات (٢٢٤ بندًا نشطًا). التجميع بحسب مجموعة المصادر بالضبط لكل بند — لا تُنسب المبالغ المركّبة جزئيًا لكل مصدر على حدة.
+    تُطوى المصادر الأقل تكرارًا تلقائيًا في "مصروفات مجمعة" بعد تغطية ٩٠٪ من الإجمالي، بنفس القاعدة المستخدمة في تقرير النظام.
+  </footer>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+const DATA = {"grand_total": 13279147.0, "slices": [{"label": "قبض العمال", "value": 4819000.0, "count": 32, "compound": false}, {"label": "ضرائب", "value": 1106242.0, "count": 8, "compound": false}, {"label": "قبض موظفين", "value": 944700.0, "count": 8, "compound": false}, {"label": "جلبة وسلك", "value": 809871.0, "count": 10, "compound": false}, {"label": "شيكات مباشرة", "value": 764450.0, "count": 1, "compound": false}, {"label": "مصروف العمال", "value": 752000.0, "count": 27, "compound": false}, {"label": "استهلاكات، محروقات", "value": 610000.0, "count": 22, "compound": true}, {"label": "قبض العيد", "value": 406100.0, "count": 4, "compound": false}, {"label": "إيجار(طوخ ، بلبيس)", "value": 244400.0, "count": 10, "compound": true}, {"label": "تكاليف بلبيس", "value": 205000.0, "count": 14, "compound": false}, {"label": "نحاس", "value": 177084.0, "count": 4, "compound": false}, {"label": "تأمينات، تكاليف بلبيس", "value": 170950.0, "count": 3, "compound": true}, {"label": "تأمينات، تكاليف بلبيس، مصروف العمال، نحاس", "value": 170000.0, "count": 1, "compound": true}, {"label": "تأمينات", "value": 140200.0, "count": 5, "compound": false}, {"label": "تأمينات، تكاليف بلبيس، تكاليف مكبس، خامات، مصروف العمال", "value": 130000.0, "count": 1, "compound": true}, {"label": "ضرائب، قضايا و محاكم", "value": 115000.0, "count": 2, "compound": true}, {"label": "قضايا و محاكم", "value": 113000.0, "count": 4, "compound": false}, {"label": "مصنعيات، نحاس", "value": 100000.0, "count": 1, "compound": true}, {"label": "تأمينات، خامات", "value": 100000.0, "count": 1, "compound": true}, {"label": "تأمينات، محروقات", "value": 100000.0, "count": 1, "compound": true}, {"label": "مصروفات مجمعة", "value": 1301150.0, "count": 65, "compound": false, "other": true, "n_sources": 32}], "n_rows": 224, "n_sheets": 35, "date_from": "2026-01-04", "date_to": "2026-09-06"};
+
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const pct = n => (n * 100).toFixed(1).replace(/\.0$/, '');
+
+function hexLerp(a, b, t) {
+  const pa = a.match(/\w\w/g).map(h => parseInt(h, 16));
+  const pb = b.match(/\w\w/g).map(h => parseInt(h, 16));
+  const p = pa.map((c, i) => Math.round(c + (pb[i] - c) * t));
+  return '#' + p.map(c => c.toString(16).padStart(2, '0')).join('');
+}
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// ── Squarified treemap layout (Bruls/Huizing/van Wijk) ──────────────────────
+function worstRatio(row, side) {
+  const sum = row.reduce((s, d) => s + d.area, 0);
+  const maxA = Math.max(...row.map(d => d.area));
+  const minA = Math.min(...row.map(d => d.area));
+  return Math.max((side * side * maxA) / (sum * sum), (sum * sum) / (side * side * minA));
+}
+function layoutRow(items, x, y, w, h, out) {
+  if (!items.length) return;
+  let row = [];
+  let i = 0;
+  const shortSide = Math.min(w, h);
+  while (i < items.length) {
+    const testRow = row.concat(items[i]);
+    if (row.length === 0 || worstRatio(testRow, shortSide) <= worstRatio(row, shortSide)) {
+      row = testRow; i++;
+    } else break;
+  }
+  const rowArea = row.reduce((s, d) => s + d.area, 0);
+  if (w >= h) {
+    const colW = rowArea / h;
+    let cy = y;
+    row.forEach(d => {
+      const itH = d.area / colW;
+      out.push({ ...d, x, y: cy, w: colW, h: itH });
+      cy += itH;
+    });
+    layoutRow(items.slice(row.length), x + colW, y, w - colW, h, out);
+  } else {
+    const rowH = rowArea / w;
+    let cx = x;
+    row.forEach(d => {
+      const itW = d.area / rowH;
+      out.push({ ...d, x: cx, y, w: itW, h: rowH });
+      cx += itW;
+    });
+    layoutRow(items.slice(row.length), x, y + rowH, w, h - rowH, out);
+  }
+}
+function squarify(items, x, y, w, h) {
+  const total = items.reduce((s, d) => s + d.value, 0);
+  const area = w * h;
+  const scaled = items.map(d => ({ ...d, area: (d.value / total) * area }));
+  const out = [];
+  layoutRow(scaled, x, y, w, h, out);
+  return out;
+}
+
+// ── Color assignment: sequential ramps by rank within each group ───────────
+function assignColors(slices) {
+  const singles = slices.filter(s => !s.compound && !s.other);
+  const compounds = slices.filter(s => s.compound);
+  singles.forEach((s, i) => {
+    const t = singles.length > 1 ? i / (singles.length - 1) : 0;
+    s.fill = hexLerp(cssVar('--steel-900'), cssVar('--steel-300'), t);
+    s.group = 'single';
+  });
+  compounds.forEach((s, i) => {
+    const t = compounds.length > 1 ? i / (compounds.length - 1) : 0;
+    s.fill = hexLerp(cssVar('--amber-900'), cssVar('--amber-300'), t);
+    s.group = 'compound';
+  });
+  slices.filter(s => s.other).forEach(s => { s.fill = cssVar('--other'); s.group = 'other'; });
+  return slices;
+}
+
+const NSVG = 'http://www.w3.org/2000/svg';
+function el(tag, attrs) {
+  const e = document.createElementNS(NSVG, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+const FIT_SIZES = [13, 12, 11, 10, 9];
+function bestFontSize(text, family, weight, availW) {
+  for (const size of FIT_SIZES) {
+    if (textWidth(text, `${weight} ${size}px ${family}`) <= availW) return size;
+  }
+  return null;
+}
+function compactNum(n) {
+  const r = Math.round(n);
+  if (r >= 1000000) return (r % 1000000 === 0 ? r / 1000000 : (r / 1000000).toFixed(1)) + 'M';
+  if (r >= 1000) return Math.round(r / 1000) + 'K';
+  return String(r);
+}
+
+let measureCanvas = null;
+function textWidth(text, font) {
+  if (!measureCanvas) measureCanvas = document.createElement('canvas');
+  const ctx = measureCanvas.getContext('2d');
+
+	if (!ctx) {
+	  return text.length * 8;
+	}
+
+	ctx.font = font;
+return ctx.measureText(text).width;
+}
+
+const tooltip = document.getElementById('tooltip');
+function showTooltipHTML(evt, html) {
+  tooltip.innerHTML = html;
+  tooltip.classList.add('show');
+  moveTooltip(evt);
+}
+function showTreemapTooltip(evt, d) {
+  const rows = [
+    `<div class="tt-row"><span>المبلغ</span><span class="num">${fmt(d.value)}</span></div>`,
+    `<div class="tt-row"><span>عدد البنود</span><span class="num">${d.count}</span></div>`,
+    `<div class="tt-row"><span>الحصة من الإجمالي</span><span class="num">${pct(d.value / DATA.grand_total)}%</span></div>`,
+  ];
+  let note = '';
+  if (d.other) note = `<div class="tt-note">يضم ${d.n_sources} مصدرًا إضافيًا أقل تكرارًا، طُويت هنا بعد تغطية ٩٠٪ من الإجمالي</div>`;
+  else if (d.compound) note = `<div class="tt-note">بند سُجّل على أكثر من مصدر معًا في نفس السطر</div>`;
+  showTooltipHTML(evt, `<div class="tt-title">${d.label}</div>${rows.join('')}${note}`);
+}
+function moveTooltip(evt) {
+  const pad = 16;
+  let x = evt.clientX + pad, y = evt.clientY + pad;
+  const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+  if (x + tw > window.innerWidth - 8) x = evt.clientX - tw - pad;
+  if (y + th > window.innerHeight - 8) y = evt.clientY - th - pad;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+function hideTooltip() { tooltip.classList.remove('show'); }
+
+function render() {
+  const svg = document.getElementById('tmap-svg');
+  svg.innerHTML = '';
+  const VW = 1000, VH = 520, GAP = 2;
+  const slices = assignColors(DATA.slices.map(s => ({ ...s })));
+  const laid = squarify(slices, 0, 0, VW, VH);
+
+  laid.forEach(d => {
+    const gx = d.x + GAP / 2, gy = d.y + GAP / 2;
+    const gw = Math.max(0, d.w - GAP), gh = Math.max(0, d.h - GAP);
+    const g = el('g', {});
+    const rect = el('rect', {
+      x: gx, y: gy, width: gw, height: gh, fill: d.fill, rx: 3,
+      class: 'tile-rect', tabindex: '0'
+    });
+    rect.addEventListener('mousemove', e => { showTreemapTooltip(e, d); });
+    rect.addEventListener('mouseenter', e => { showTreemapTooltip(e, d); });
+    rect.addEventListener('mouseleave', hideTooltip);
+    rect.addEventListener('focus', e => {
+      const box = rect.getBoundingClientRect();
+      showTreemapTooltip({ clientX: box.left + box.width / 2, clientY: box.top }, d);
+    });
+    rect.addEventListener('blur', hideTooltip);
+    g.appendChild(rect);
+
+    const padIn = 5;
+    const availW = gw - padIn * 2;
+    const textColor = pickTextColor(d.fill);
+
+    // Try progressively smaller sizes before giving up — a tile too narrow
+    // for the label at 13px may still fit it (or at least the amount) at
+    // 10-9px, and a bare tile with no text at all is worse than a small one.
+    const labelSize = gh > 16 ? bestFontSize(d.label, 'Cairo', 600, availW) : null;
+    let valueStr = fmt(d.value);
+    let valueSize = gh > 13 ? bestFontSize(valueStr, '"JetBrains Mono"', 500, availW) : null;
+    if (!valueSize && gh > 13) {
+      valueStr = compactNum(d.value);
+      valueSize = bestFontSize(valueStr, '"JetBrains Mono"', 500, availW);
+    }
+
+    const showBoth = labelSize && valueSize && gh > labelSize + valueSize + 12;
+    const cx = gx + gw / 2, cy = gy + gh / 2;
+
+    if (showBoth) {
+      const t1 = el('text', {
+        x: cx, y: cy - valueSize / 2 - 2, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        class: 'tile-label', fill: textColor, style: `font-size:${labelSize}px`
+      });
+      t1.textContent = d.label;
+      g.appendChild(t1);
+      const t2 = el('text', {
+        x: cx, y: cy + labelSize / 2 + 4, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        class: 'tile-value', fill: textColor, style: `font-size:${valueSize}px`, opacity: '0.85'
+      });
+      t2.textContent = valueStr;
+      g.appendChild(t2);
+    } else if (labelSize) {
+      const t1 = el('text', {
+        x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        class: 'tile-label', fill: textColor, style: `font-size:${labelSize}px`
+      });
+      t1.textContent = d.label;
+      g.appendChild(t1);
+    } else if (valueSize) {
+      const t2 = el('text', {
+        x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        class: 'tile-value', fill: textColor, style: `font-size:${valueSize}px`, opacity: '0.9'
+      });
+      t2.textContent = valueStr;
+      g.appendChild(t2);
+    }
+    svg.appendChild(g);
+  });
+
+  // header stats
+  document.getElementById('hdr-rows').textContent = DATA.n_rows.toLocaleString('en-US');
+  document.getElementById('hdr-sheets').textContent = DATA.n_sheets.toLocaleString('en-US');
+  document.getElementById('hdr-from').textContent = arDate(DATA.date_from);
+  document.getElementById('hdr-to').textContent = arDate(DATA.date_to);
+  document.getElementById('stat-total').textContent = fmt(DATA.grand_total);
+  const top = slices.find(s => !s.other);
+  document.getElementById('stat-top').textContent = top.label + ' — ' + fmt(top.value);
+  const LABOR_LABELS = ['قبض العمال', 'قبض موظفين', 'مصروف العمال', 'قبض العيد'];
+  const laborTotal = slices.filter(s => LABOR_LABELS.includes(s.label)).reduce((sum, s) => sum + s.value, 0);
+  document.getElementById('stat-labor').textContent = fmt(laborTotal);
+  const otherSlice = slices.find(s => s.other);
+  document.getElementById('legend-n-other').textContent = otherSlice.n_sources;
+
+  renderTable(slices);
+}
+
+function pickTextColor(hex) {
+  const [r, g, b] = hex.match(/\w\w/g).map(h => parseInt(h, 16));
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.55 ? '#1c2430' : '#f5f1e8';
+}
+
+const MONTH_NAMES = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+function arDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${d} ${MONTH_NAMES[m - 1]} ${y}`;
+}
+
+function renderTable(slices) {
+  const tbody = document.getElementById('tbl-body');
+  tbody.innerHTML = '';
+  slices.forEach((d, i) => {
+    const tr = document.createElement('tr');
+    const share = d.value / DATA.grand_total;
+    const badge = d.other
+      ? `<span class="badge other"><span class="dot"></span>مجمّع</span>`
+      : d.compound
+        ? `<span class="badge compound"><span class="dot"></span>مركّب</span>`
+        : `<span class="badge single"><span class="dot"></span>مصدر واحد</span>`;
+    tr.innerHTML = `
+      <td class="rank">${i + 1}</td>
+      <td class="src-name">${d.label}${d.other ? ` <span style="color:var(--ink-faint);font-weight:400">(${d.n_sources} مصدرًا)</span>` : ''}</td>
+      <td>${badge}</td>
+      <td class="num-col num">${fmt(d.value)}</td>
+      <td class="num-col num">${d.count}</td>
+      <td>
+        <div class="share-bar-wrap">
+          <div class="share-bar-track"><div class="share-bar-fill" style="width:${(share * 100).toFixed(1)}%; background:${d.fill}"></div></div>
+          <span class="num" style="font-size:12px;color:var(--ink-muted);min-width:38px">${pct(share)}%</span>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Raw data by month ────────────────────────────────────────────────────
+const ROWS = [{"sheet": 1, "date": "2026-01-04", "month": "2026-01", "label": "قبض عمال", "source": "قبض العمال", "amount": 150000.0, "status": "مراجَع"}, {"sheet": 1, "date": "2026-01-04", "month": "2026-01", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 1, "date": "2026-01-04", "month": "2026-01", "label": "استهلاكات ومحروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 1, "date": "2026-01-04", "month": "2026-01", "label": "محمود عثمان", "source": "تكاليف بلبيس", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 1, "date": "2026-01-04", "month": "2026-01", "label": "إنشاء غرفة للجودة حريم", "source": "انشاءات", "amount": 60000.0, "status": "مراجَع"}, {"sheet": 1, "date": "2026-01-04", "month": "2026-01", "label": "سلك أتلانتيك", "source": "جلبة وسلك", "amount": 109000.0, "status": "مراجَع"}, {"sheet": 1, "date": "2026-01-04", "month": "2026-01", "label": "كراتين", "source": "كرتون", "amount": 5000.0, "status": "مراجَع"}, {"sheet": 1, "date": "2026-01-04", "month": "2026-01", "label": "مشتريات عدة", "source": "عدة", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 2, "date": "2026-01-10", "month": "2026-01", "label": "قبض عمال", "source": "قبض العمال", "amount": 150000.0, "status": "مراجَع"}, {"sheet": 2, "date": "2026-01-10", "month": "2026-01", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 27000.0, "status": "مراجَع"}, {"sheet": 2, "date": "2026-01-10", "month": "2026-01", "label": "استهلاكات ومحروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 2, "date": "2026-01-10", "month": "2026-01", "label": "كهرباء كفر جمال", "source": "كهرباء", "amount": 27000.0, "status": "مراجَع"}, {"sheet": 2, "date": "2026-01-10", "month": "2026-01", "label": "نحاس بوش", "source": "نحاس", "amount": 70000.0, "status": "مراجَع"}, {"sheet": 2, "date": "2026-01-10", "month": "2026-01", "label": "تحت حساب اصلاح جيتس", "source": "تكاليف سيارة", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 2, "date": "2026-01-10", "month": "2026-01", "label": "كرتون", "source": "كرتون", "amount": 11500.0, "status": "مراجَع"}, {"sheet": 2, "date": "2026-01-10", "month": "2026-01", "label": "جلبة", "source": "جلبة وسلك", "amount": 16800.0, "status": "مراجَع"}, {"sheet": 2, "date": "2026-01-10", "month": "2026-01", "label": "عدة - لصق وغيره", "source": "عدة، لصق", "amount": 5000.0, "status": "مراجَع"}, {"sheet": 3, "date": "2026-01-17", "month": "2026-01", "label": "قبض عمال", "source": "قبض العمال", "amount": 155000.0, "status": "مراجَع"}, {"sheet": 3, "date": "2026-01-17", "month": "2026-01", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 3, "date": "2026-01-17", "month": "2026-01", "label": "استهلاكات ومحروقات", "source": "استهلاكات، محروقات", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 3, "date": "2026-01-17", "month": "2026-01", "label": "محمود عثمان وخامات", "source": "تكاليف بلبيس، خامات", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 3, "date": "2026-01-17", "month": "2026-01", "label": "تكملة النحاس", "source": "نحاس", "amount": 2000.0, "status": "مراجَع"}, {"sheet": 3, "date": "2026-01-17", "month": "2026-01", "label": "عدة - كرتون", "source": "عدة، كرتون", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 4, "date": "2026-01-25", "month": "2026-01", "label": "ضرائب عامة", "source": "ضرائب", "amount": 100000.0, "status": "مراجَع"}, {"sheet": 4, "date": "2026-01-25", "month": "2026-01", "label": "القيمة المضافة", "source": "ضرائب", "amount": 303147.0, "status": "مراجَع"}, {"sheet": 5, "date": "2026-01-26", "month": "2026-01", "label": "صيانة كمبروسور", "source": "صيانة", "amount": 20000.0, "status": "مراجَع"}, {"sheet": 5, "date": "2026-01-26", "month": "2026-01", "label": "فيمة تصنيع خامة من الرايش", "source": "خامات", "amount": 67500.0, "status": "مراجَع"}, {"sheet": 5, "date": "2026-01-26", "month": "2026-01", "label": "إيجار بلبيس", "source": "إيجار(طوخ ، بلبيس)", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 5, "date": "2026-01-26", "month": "2026-01", "label": "تأمينات", "source": "تأمينات", "amount": 36250.0, "status": "مراجَع"}, {"sheet": 5, "date": "2026-01-26", "month": "2026-01", "label": "تأمينات", "source": "تأمينات", "amount": 19600.0, "status": "مراجَع"}, {"sheet": 5, "date": "2026-01-26", "month": "2026-01", "label": "محمود عثمان مصروف و خامة حديد", "source": "تكاليف بلبيس، خامات", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 5, "date": "2026-01-26", "month": "2026-01", "label": "قبض عمال", "source": "قبض العمال", "amount": 155000.0, "status": "مراجَع"}, {"sheet": 5, "date": "2026-01-26", "month": "2026-01", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 5, "date": "2026-01-26", "month": "2026-01", "label": "استهلاكات ومحروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 5, "date": "2026-01-26", "month": "2026-01", "label": "فدي - شكاير - كرتون-  عدة", "source": "شكاير، عدة، فدي، كرتون", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 6, "date": "2026-02-01", "month": "2026-02", "label": "قبض عمال", "source": "قبض العمال", "amount": 170000.0, "status": "مراجَع"}, {"sheet": 6, "date": "2026-02-01", "month": "2026-02", "label": "مردة عمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 6, "date": "2026-02-01", "month": "2026-02", "label": "استهلاكات ومحروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 6, "date": "2026-02-01", "month": "2026-02", "label": "*قبض موظفين", "source": "قبض موظفين", "amount": 139500.0, "status": "مراجَع"}, {"sheet": 6, "date": "2026-02-01", "month": "2026-02", "label": "محمود عثمان رواتب - أنابيب", "source": "أنابيب، تكاليف بلبيس", "amount": 20000.0, "status": "مراجَع"}, {"sheet": 6, "date": "2026-02-01", "month": "2026-02", "label": "عدة - شكاير", "source": "شكاير، عدة", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 6, "date": "2026-02-01", "month": "2026-02", "label": "**إيجار طوخ", "source": "إيجار(طوخ ، بلبيس)", "amount": 8050.0, "status": "مراجَع"}, {"sheet": 8, "date": "2026-02-15", "month": "2026-02", "label": "قبض الأسبوع", "source": "قبض العمال", "amount": 155000.0, "status": "مراجَع"}, {"sheet": 8, "date": "2026-02-15", "month": "2026-02", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 8, "date": "2026-02-15", "month": "2026-02", "label": "استهلاكات ومحروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 8, "date": "2026-02-15", "month": "2026-02", "label": "محمود عثمان", "source": "تكاليف بلبيس", "amount": 5000.0, "status": "مراجَع"}, {"sheet": 8, "date": "2026-02-15", "month": "2026-02", "label": "خامات حديد + كراتين + شكاير + عدة", "source": "خامات، شكاير، عدة، كرتون", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 11, "date": "2026-02-21", "month": "2026-02", "label": "قبض عمال", "source": "قبض العمال", "amount": 150000.0, "status": "مراجَع"}, {"sheet": 11, "date": "2026-02-21", "month": "2026-02", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 11, "date": "2026-02-21", "month": "2026-02", "label": "استهلاكات ومحروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 11, "date": "2026-02-21", "month": "2026-02", "label": "إيجار بليس", "source": "إيجار(طوخ ، بلبيس)", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 11, "date": "2026-02-21", "month": "2026-02", "label": "تأمينات", "source": "تأمينات", "amount": 55850.0, "status": "مراجَع"}, {"sheet": 11, "date": "2026-02-21", "month": "2026-02", "label": "محمود عثمان خامة حديد", "source": "تكاليف بلبيس، خامات", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 11, "date": "2026-02-21", "month": "2026-02", "label": "كرتون و شكاير", "source": "شكاير، كرتون", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 11, "date": "2026-02-21", "month": "2026-02", "label": "عدة - دوجلات", "source": "دوجلات، عدة", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 7, "date": "2026-02-26", "month": "2026-02", "label": "قبض العمال", "source": "قبض العمال", "amount": 165000.0, "status": "مراجَع"}, {"sheet": 7, "date": "2026-02-26", "month": "2026-02", "label": "مصروف العمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 7, "date": "2026-02-26", "month": "2026-02", "label": "استهلاكات - كاوتش السيارة", "source": "استهلاكات، تكاليف سيارة", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 7, "date": "2026-02-26", "month": "2026-02", "label": "سلك - جلبة منير سند", "source": "جلبة وسلك", "amount": 72081.0, "status": "مراجَع"}, {"sheet": 7, "date": "2026-02-26", "month": "2026-02", "label": "صتدوق الطواري تأمينات  - أختام", "source": "تأمينات", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 7, "date": "2026-02-26", "month": "2026-02", "label": "بقية إصلاح الجيتس", "source": "تكاليف سيارة", "amount": 7000.0, "status": "مراجَع"}, {"sheet": 7, "date": "2026-02-26", "month": "2026-02", "label": "شكاير - عدة", "source": "شكاير، عدة", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 7, "date": "2026-02-26", "month": "2026-02", "label": "محمود عثمان - قاعدة الهيتر", "source": "تكاليف بلبيس، قاعدة الهيتر", "amount": 20000.0, "status": "مراجَع"}, {"sheet": 7, "date": "2026-02-26", "month": "2026-02", "label": "محمود ومصطفى عثمان", "source": "تكاليف بلبيس", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 9, "date": "2026-02-28", "month": "2026-02", "label": "قبض عمال", "source": "قبض العمال", "amount": 155000.0, "status": "مراجَع"}, {"sheet": 9, "date": "2026-02-28", "month": "2026-02", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 9, "date": "2026-02-28", "month": "2026-02", "label": "استهلاكات - محروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 9, "date": "2026-02-28", "month": "2026-02", "label": "*قبض موظفين", "source": "قبض موظفين", "amount": 133950.0, "status": "مراجَع"}, {"sheet": 9, "date": "2026-02-28", "month": "2026-02", "label": "عدة", "source": "عدة", "amount": 5000.0, "status": "مراجَع"}, {"sheet": 9, "date": "2026-02-28", "month": "2026-02", "label": "محمود عثمان مصروف - خامة", "source": "تكاليف بلبيس، خامات", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 9, "date": "2026-02-28", "month": "2026-02", "label": "حساب مصنعيات - خامة نحاس شهر فبراير", "source": "مصنعيات، نحاس", "amount": 100000.0, "status": "مراجَع"}, {"sheet": 9, "date": "2026-02-28", "month": "2026-02", "label": "*إيجار طوخ", "source": "إيجار(طوخ ، بلبيس)", "amount": 8050.0, "status": "مراجَع"}, {"sheet": 10, "date": "2026-03-08", "month": "2026-03", "label": "قبضن عمال", "source": "قبض العمال", "amount": 155000.0, "status": "مراجَع"}, {"sheet": 10, "date": "2026-03-08", "month": "2026-03", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 10, "date": "2026-03-08", "month": "2026-03", "label": "استهلاكات محروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 10, "date": "2026-03-08", "month": "2026-03", "label": "محمود عثمان -قاعدة", "source": "تكاليف بلبيس، قاعدة الهيتر", "amount": 12000.0, "status": "مراجَع"}, {"sheet": 10, "date": "2026-03-08", "month": "2026-03", "label": "كراتين", "source": "كرتون", "amount": 11000.0, "status": "مراجَع"}, {"sheet": 10, "date": "2026-03-08", "month": "2026-03", "label": "عدة - شكاير", "source": "شكاير، عدة", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 10, "date": "2026-03-08", "month": "2026-03", "label": "سلك -جلبة منير", "source": "جلبة وسلك", "amount": 93000.0, "status": "مراجَع"}, {"sheet": 10, "date": "2026-03-08", "month": "2026-03", "label": "تسييط مبلغ أرود", "source": "قضايا و محاكم", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 10, "date": "2026-03-08", "month": "2026-03", "label": "بقية تمن تصنيع النحاس", "source": "نحاس", "amount": 56700.0, "status": "مراجَع"}, {"sheet": 12, "date": "2026-03-15", "month": "2026-03", "label": "قبض عمال", "source": "قبض العمال", "amount": 150000.0, "status": "مراجَع"}, {"sheet": 12, "date": "2026-03-15", "month": "2026-03", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 12, "date": "2026-03-15", "month": "2026-03", "label": "استهلاكات ومحروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 12, "date": "2026-03-15", "month": "2026-03", "label": "محمود عثمان", "source": "تكاليف بلبيس", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 13, "date": "2026-03-17", "month": "2026-03", "label": "قبض الأسبوع", "source": "قبض العمال", "amount": 150000.0, "status": "مراجَع"}, {"sheet": 13, "date": "2026-03-17", "month": "2026-03", "label": "قبض 4 أيام عيد", "source": "قبض العيد", "amount": 67000.0, "status": "مراجَع"}, {"sheet": 13, "date": "2026-03-17", "month": "2026-03", "label": "مصروف", "source": "مصروف العمال", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 13, "date": "2026-03-17", "month": "2026-03", "label": "استهلاكات محروقات", "source": "استهلاكات، محروقات", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 13, "date": "2026-03-17", "month": "2026-03", "label": "أرود", "source": "ضرائب", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 14, "date": "2026-03-29", "month": "2026-03", "label": "قبض عمال", "source": "قبض العمال", "amount": 105000.0, "status": "مراجَع"}, {"sheet": 14, "date": "2026-03-29", "month": "2026-03", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 14, "date": "2026-03-29", "month": "2026-03", "label": "استهلاكات", "source": "استهلاكات", "amount": 20000.0, "status": "مراجَع"}, {"sheet": 14, "date": "2026-03-29", "month": "2026-03", "label": "تصنيع خامة + جزء تأمينات", "source": "تأمينات، خامات", "amount": 100000.0, "status": "مراجَع"}, {"sheet": 15, "date": "2026-04-05", "month": "2026-04", "label": "قبض عمال الأسبوع", "source": "قبض العمال", "amount": 145000.0, "status": "مراجَع"}, {"sheet": 15, "date": "2026-04-05", "month": "2026-04", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 15, "date": "2026-04-05", "month": "2026-04", "label": "استهلاكات- محروقات -كراتين", "source": "استهلاكات، كرتون، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 15, "date": "2026-04-05", "month": "2026-04", "label": "محمود عثمان - ت نحاس - تأمينات - مصروف", "source": "تأمينات، تكاليف بلبيس، مصروف العمال، نحاس", "amount": 170000.0, "status": "مراجَع"}, {"sheet": 15, "date": "2026-04-05", "month": "2026-04", "label": "سلك -جلبة منير", "source": "جلبة وسلك", "amount": 107000.0, "status": "مراجَع"}, {"sheet": 15, "date": "2026-04-05", "month": "2026-04", "label": "*قبض موظفين", "source": "قبض موظفين", "amount": 124950.0, "status": "مراجَع"}, {"sheet": 15, "date": "2026-04-05", "month": "2026-04", "label": "شيك ضريبة مبيعات أحمد طلبة", "source": "ضرائب", "amount": 62200.0, "status": "مراجَع"}, {"sheet": 15, "date": "2026-04-05", "month": "2026-04", "label": "**إيجار طوخ", "source": "إيجار(طوخ ، بلبيس)", "amount": 8050.0, "status": "مراجَع"}, {"sheet": 16, "date": "2026-04-19", "month": "2026-04", "label": "قبض أعمال", "source": "قبض العمال", "amount": 134000.0, "status": "مراجَع"}, {"sheet": 16, "date": "2026-04-19", "month": "2026-04", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 16, "date": "2026-04-19", "month": "2026-04", "label": "استهلاكات- مصروفات", "source": "استهلاكات، محروقات", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 16, "date": "2026-04-19", "month": "2026-04", "label": "رسوم محكمة", "source": "قضايا و محاكم", "amount": 8000.0, "status": "مراجَع"}, {"sheet": 16, "date": "2026-04-19", "month": "2026-04", "label": "نحاس للبوش", "source": "نحاس", "amount": 48384.0, "status": "مراجَع"}, {"sheet": 16, "date": "2026-04-19", "month": "2026-04", "label": "محمود عثمان", "source": "تكاليف بلبيس", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 17, "date": "2026-04-26", "month": "2026-04", "label": "قبض العمال", "source": "قبض العمال", "amount": 145000.0, "status": "مراجَع"}, {"sheet": 17, "date": "2026-04-26", "month": "2026-04", "label": "مصروف العمال", "source": "مصروف العمال", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 17, "date": "2026-04-26", "month": "2026-04", "label": "مصروفات والاستهلاكات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 17, "date": "2026-04-26", "month": "2026-04", "label": "محمود عثمان", "source": "تكاليف بلبيس", "amount": 5000.0, "status": "مراجَع"}, {"sheet": 17, "date": "2026-04-26", "month": "2026-04", "label": "كرايين وشكاير", "source": "شكاير، كرتون", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 17, "date": "2026-04-26", "month": "2026-04", "label": "أطرف مخرطة + عدة", "source": "أظرف مخرطة، عدة", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 18, "date": "2026-04-30", "month": "2026-04", "label": "ضريبة مبيعات", "source": "ضرائب", "amount": 450895.0, "status": "مراجَع"}, {"sheet": 19, "date": "2026-05-10", "month": "2026-05", "label": "قبض عمال", "source": "قبض العمال", "amount": 150000.0, "status": "مراجَع"}, {"sheet": 19, "date": "2026-05-10", "month": "2026-05", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 19, "date": "2026-05-10", "month": "2026-05", "label": "استهلاكات + محروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 19, "date": "2026-05-10", "month": "2026-05", "label": "*محمود عثمان - تأمينات - إيجار - مصروف غفير", "source": "تأمينات، تكاليف بلبيس", "amount": 85950.0, "status": "مراجَع"}, {"sheet": 19, "date": "2026-05-10", "month": "2026-05", "label": "عدة -كراتين", "source": "عدة، كرتون", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 19, "date": "2026-05-10", "month": "2026-05", "label": "كهرباء", "source": "كهرباء", "amount": 15350.0, "status": "مراجَع"}, {"sheet": 19, "date": "2026-05-10", "month": "2026-05", "label": "قبض موظفين", "source": "قبض موظفين", "amount": 119500.0, "status": "مراجَع"}, {"sheet": 19, "date": "2026-05-10", "month": "2026-05", "label": "**إيجار بلبيس و طوخ", "source": "إيجار(طوخ ، بلبيس)", "amount": 38050.0, "status": "مراجَع"}, {"sheet": 20, "date": "2026-05-17", "month": "2026-05", "label": "قبض عمال", "source": "قبض العمال", "amount": 165000.0, "status": "مراجَع"}, {"sheet": 20, "date": "2026-05-17", "month": "2026-05", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 20, "date": "2026-05-17", "month": "2026-05", "label": "استهلاكات ومحروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 20, "date": "2026-05-17", "month": "2026-05", "label": "محمود عثمان و بقية التأمينات", "source": "تأمينات، تكاليف بلبيس", "amount": 60000.0, "status": "مراجَع"}, {"sheet": 20, "date": "2026-05-17", "month": "2026-05", "label": "ضرائب ومصاريف القضية", "source": "ضرائب، قضايا و محاكم", "amount": 55000.0, "status": "مراجَع"}, {"sheet": 20, "date": "2026-05-17", "month": "2026-05", "label": "عدة و كراتين", "source": "عدة، كرتون", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 20, "date": "2026-05-17", "month": "2026-05", "label": "جلبة -سلك منير", "source": "جلبة وسلك", "amount": 102700.0, "status": "مراجَع"}, {"sheet": 21, "date": "2026-05-24", "month": "2026-05", "label": "قبض لاسبوع بعد العيد", "source": "قبض العيد", "amount": 160000.0, "status": "مراجَع"}, {"sheet": 21, "date": "2026-05-24", "month": "2026-05", "label": "قبض اسبوع العيد", "source": "قبض العيد", "amount": 145000.0, "status": "مراجَع"}, {"sheet": 21, "date": "2026-05-24", "month": "2026-05", "label": "مصروف", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 21, "date": "2026-05-24", "month": "2026-05", "label": "محروقات و أستهلاكات", "source": "استهلاكات، محروقات", "amount": 20000.0, "status": "مراجَع"}, {"sheet": 21, "date": "2026-05-24", "month": "2026-05", "label": "شكاير + عدة - كرتون", "source": "شكاير، عدة، كرتون", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 21, "date": "2026-05-24", "month": "2026-05", "label": "ضرائب وتكلفة القضية", "source": "ضرائب، قضايا و محاكم", "amount": 60000.0, "status": "مراجَع"}, {"sheet": 21, "date": "2026-05-24", "month": "2026-05", "label": "قبض معد + عديات", "source": "قبض العيد", "amount": 34100.0, "status": "مراجَع"}, {"sheet": 22, "date": "2026-06-07", "month": "2026-06", "label": "قبض 3 قبل العيد", "source": "قبض العمال", "amount": 80000.0, "status": "مراجَع"}, {"sheet": 22, "date": "2026-06-07", "month": "2026-06", "label": "قبض 4 أيام بعد العيد", "source": "قبض العمال", "amount": 110000.0, "status": "مراجَع"}, {"sheet": 22, "date": "2026-06-07", "month": "2026-06", "label": "كهرباء كفر الجبال", "source": "كهرباء", "amount": 20500.0, "status": "مراجَع"}, {"sheet": 22, "date": "2026-06-07", "month": "2026-06", "label": "مصروف ورشة", "source": "مصروف العمال", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 22, "date": "2026-06-07", "month": "2026-06", "label": "استهلاكات ومحروقات", "source": "استهلاكات، محروقات", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 22, "date": "2026-06-07", "month": "2026-06", "label": "*قبض موظفين", "source": "قبض موظفين", "amount": 100950.0, "status": "مراجَع"}, {"sheet": 22, "date": "2026-06-07", "month": "2026-06", "label": "بقية فلوس أرود", "source": "قضايا و محاكم", "amount": 60000.0, "status": "مراجَع"}, {"sheet": 22, "date": "2026-06-07", "month": "2026-06", "label": "بقية الضرائب", "source": "ضرائب", "amount": 60000.0, "status": "مراجَع"}, {"sheet": 22, "date": "2026-06-07", "month": "2026-06", "label": "مصاريف قضايا", "source": "قضايا و محاكم", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 22, "date": "2026-06-07", "month": "2026-06", "label": "**إيجار طوخ", "source": "إيجار(طوخ ، بلبيس)", "amount": 8050.0, "status": "مراجَع"}, {"sheet": 23, "date": "2026-06-14", "month": "2026-06", "label": "قبض عمال", "source": "قبض العمال", "amount": 165000.0, "status": "مراجَع"}, {"sheet": 23, "date": "2026-06-14", "month": "2026-06", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 23, "date": "2026-06-14", "month": "2026-06", "label": "استهلاكات ومحروقات", "source": "استهلاكات، محروقات", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 23, "date": "2026-06-14", "month": "2026-06", "label": "محمود عثمان", "source": "تكاليف بلبيس", "amount": 20000.0, "status": "مراجَع"}, {"sheet": 23, "date": "2026-06-14", "month": "2026-06", "label": "عدة -خلافه", "source": "عدة", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 26, "date": "2026-06-15", "month": "2026-06", "label": "شيكات مباشره دون وصف مفردات", "source": "شيكات مباشرة", "amount": 764450.0, "status": "مراجَع"}, {"sheet": 24, "date": "2026-06-26", "month": "2026-06", "label": "قبض عمال", "source": "قبض العمال", "amount": 160000.0, "status": "مراجَع"}, {"sheet": 24, "date": "2026-06-26", "month": "2026-06", "label": "مصروف عمال", "source": "تكاليف بلبيس", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 24, "date": "2026-06-26", "month": "2026-06", "label": "استهلاكات - محروقات- عدة", "source": "استهلاكات، عدة، محروقات", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 24, "date": "2026-06-26", "month": "2026-06", "label": "محمود عثمان", "source": "تكاليف بلبيس", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 24, "date": "2026-06-26", "month": "2026-06", "label": "سلك -جلبة منير سند", "source": "جلبة وسلك", "amount": 14200.0, "status": "مراجَع"}, {"sheet": 24, "date": "2026-06-26", "month": "2026-06", "label": "تحت حساب سير المكبس", "source": "تكاليف مكبس", "amount": 15800.0, "status": "مراجَع"}, {"sheet": 25, "date": "2026-06-28", "month": "2026-06", "label": "قبض عمال", "source": "قبض العمال", "amount": 165000.0, "status": "مراجَع"}, {"sheet": 25, "date": "2026-06-28", "month": "2026-06", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 25, "date": "2026-06-28", "month": "2026-06", "label": "استهلاكات - محروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 25, "date": "2026-06-28", "month": "2026-06", "label": "عدة -كرتون", "source": "عدة، كرتون", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 25, "date": "2026-06-28", "month": "2026-06", "label": "محمد عثمان - تكملة تأمينات - إيجار بلبيس", "source": "تأمينات، تكاليف بلبيس", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 25, "date": "2026-06-28", "month": "2026-06", "label": "قبض موظفين وايجار طوخ", "source": "قبض موظفين", "amount": 101950.0, "status": "مراجَع"}, {"sheet": 25, "date": "2026-06-28", "month": "2026-06", "label": "دفعة ضرائب", "source": "ضرائب", "amount": 50000.0, "status": "مراجَع"}, {"sheet": 25, "date": "2026-06-28", "month": "2026-06", "label": "تحت حساب موتور الجيتس", "source": "تكاليف سيارة", "amount": 55000.0, "status": "مراجَع"}, {"sheet": 25, "date": "2026-06-28", "month": "2026-06", "label": "إيجار طوخ و بلبيس", "source": "إيجار(طوخ ، بلبيس)", "amount": 38050.0, "status": "مراجَع"}, {"sheet": 27, "date": "2026-07-12", "month": "2026-07", "label": "قبض عمال", "source": "قبض العمال", "amount": 165000.0, "status": "مراجَع"}, {"sheet": 27, "date": "2026-07-12", "month": "2026-07", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 27, "date": "2026-07-12", "month": "2026-07", "label": "استهلاكات ومحروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 27, "date": "2026-07-12", "month": "2026-07", "label": "محمود عثمان", "source": "تكاليف بلبيس", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 27, "date": "2026-07-12", "month": "2026-07", "label": "عدة أقلام 12 / فدي 10", "source": "عدة أقلام، فدي", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 27, "date": "2026-07-12", "month": "2026-07", "label": "كرتون", "source": "كرتون", "amount": 7000.0, "status": "مراجَع"}, {"sheet": 27, "date": "2026-07-12", "month": "2026-07", "label": "سلة وجلبة منير", "source": "جلبة وسلك", "amount": 73400.0, "status": "مراجَع"}, {"sheet": 28, "date": "2026-07-19", "month": "2026-07", "label": "قبض عمال", "source": "قبض العمال", "amount": 160000.0, "status": "مراجَع"}, {"sheet": 28, "date": "2026-07-19", "month": "2026-07", "label": "مصروف العمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 28, "date": "2026-07-19", "month": "2026-07", "label": "استهلاكات + محروقات - عدة 8", "source": "استهلاكات، عدة، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 28, "date": "2026-07-19", "month": "2026-07", "label": "قيمة 1% تأمينات", "source": "تأمينات", "amount": 13500.0, "status": "مراجَع"}, {"sheet": 28, "date": "2026-07-19", "month": "2026-07", "label": "محمود عثمان", "source": "تكاليف بلبيس", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 28, "date": "2026-07-19", "month": "2026-07", "label": "دفعة الضرائب الثانية", "source": "ضرائب", "amount": 50000.0, "status": "مراجَع"}, {"sheet": 28, "date": "2026-07-19", "month": "2026-07", "label": "كاوتش للجيتس", "source": "تكاليف سيارة", "amount": 8000.0, "status": "مراجَع"}, {"sheet": 29, "date": "2026-07-26", "month": "2026-07", "label": "قبض أسبوع عمال", "source": "قبض العمال", "amount": 160000.0, "status": "مراجَع"}, {"sheet": 29, "date": "2026-07-26", "month": "2026-07", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 29, "date": "2026-07-26", "month": "2026-07", "label": "استهلاكات + محروقات", "source": "استهلاكات، محروقات", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 29, "date": "2026-07-26", "month": "2026-07", "label": "محمود عثمان- إيجار -تأمينات", "source": "تأمينات، محروقات", "amount": 100000.0, "status": "مراجَع"}, {"sheet": 29, "date": "2026-07-26", "month": "2026-07", "label": "قبض الشهر موظفين", "source": "قبض موظفين", "amount": 111950.0, "status": "مراجَع"}, {"sheet": 29, "date": "2026-07-26", "month": "2026-07", "label": "عدة - كرتون", "source": "عدة، كرتون", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 29, "date": "2026-07-26", "month": "2026-07", "label": "إيجار طوخ و بلبيس", "source": "إيجار(طوخ ، بلبيس)", "amount": 38050.0, "status": "مراجَع"}, {"sheet": 30, "date": "2026-08-02", "month": "2026-08", "label": "قبض عمال", "source": "قبض العمال", "amount": 145000.0, "status": "مراجَع"}, {"sheet": 30, "date": "2026-08-02", "month": "2026-08", "label": "أحمد إبراهيم - مصروف عمال", "source": "أحمد إبراهيم، مصروف العمال", "amount": 40000.0, "status": "مراجَع"}, {"sheet": 30, "date": "2026-08-02", "month": "2026-08", "label": "استهلاكات - محروقات", "source": "استهلاكات، محروقات", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 30, "date": "2026-08-02", "month": "2026-08", "label": "محمود عثمان", "source": "تكاليف بلبيس", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 30, "date": "2026-08-02", "month": "2026-08", "label": "كراتين - شكاير - عدة", "source": "شكاير، عدة، كرتون", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 30, "date": "2026-08-02", "month": "2026-08", "label": "كهرباء", "source": "كهرباء", "amount": 23000.0, "status": "مراجَع"}, {"sheet": 31, "date": "2026-08-09", "month": "2026-08", "label": "قبض العمال", "source": "قبض العمال", "amount": 160000.0, "status": "مراجَع"}, {"sheet": 31, "date": "2026-08-09", "month": "2026-08", "label": "مصروف العمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 31, "date": "2026-08-09", "month": "2026-08", "label": "استهلاكات - إصلاح نقل - أيجار خلال التراخيص", "source": "استهلاكات، تكاليف سيارة", "amount": 60000.0, "status": "مراجَع"}, {"sheet": 31, "date": "2026-08-09", "month": "2026-08", "label": "فرق كهرباء", "source": "كهرباء", "amount": 7000.0, "status": "مراجَع"}, {"sheet": 31, "date": "2026-08-09", "month": "2026-08", "label": "كرتونة 1000", "source": "كرتون", "amount": 11500.0, "status": "مراجَع"}, {"sheet": 31, "date": "2026-08-09", "month": "2026-08", "label": "إصلاح الجيتس - عدة", "source": "تكاليف سيارة، عدة", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 31, "date": "2026-08-09", "month": "2026-08", "label": "محمود عثمان - كابل للمكبس - طباعة أذون - مصروف - رصيد", "source": "أنابيب، تكاليف بلبيس، تكاليف مكبس", "amount": 50000.0, "status": "مراجَع"}, {"sheet": 31, "date": "2026-08-09", "month": "2026-08", "label": "سلك - جلبة منير سند", "source": "جلبة وسلك", "amount": 124690.0, "status": "مراجَع"}, {"sheet": 33, "date": "2026-08-23", "month": "2026-08", "label": "قبض عمال", "source": "قبض العمال", "amount": 160000.0, "status": "مراجَع"}, {"sheet": 33, "date": "2026-08-23", "month": "2026-08", "label": "أحمد إبراهيم مصروف - سيارة إيجار - تجهيز السيارة النقل للفحص", "source": "أحمد إبراهيم، تكاليف سيارة", "amount": 50000.0, "status": "مراجَع"}, {"sheet": 33, "date": "2026-08-23", "month": "2026-08", "label": "محمود عثمان", "source": "تكاليف بلبيس", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 33, "date": "2026-08-23", "month": "2026-08", "label": "عدة - كراتين - شكاير وخلافه", "source": "شكاير، عدة، كرتون", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 32, "date": "2026-08-26", "month": "2026-08", "label": "قبض عمال", "source": "قبض العمال", "amount": 160000.0, "status": "مراجَع"}, {"sheet": 32, "date": "2026-08-26", "month": "2026-08", "label": "مصروف وتكاليف سيارة + إيجار نقل - تراخيص", "source": "تكاليف سيارة، مصروف العمال", "amount": 50000.0, "status": "مراجَع"}, {"sheet": 32, "date": "2026-08-26", "month": "2026-08", "label": "محمود عثمان", "source": "تكاليف بلبيس", "amount": 15000.0, "status": "مراجَع"}, {"sheet": 32, "date": "2026-08-26", "month": "2026-08", "label": "بقية تكاليف اصلاح الجيتس", "source": "تكاليف سيارة", "amount": 5000.0, "status": "مراجَع"}, {"sheet": 32, "date": "2026-08-26", "month": "2026-08", "label": "عدة + سكاكين نحاس قاعدة", "source": "سكاكين نحاس، عدة", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 34, "date": "2026-08-30", "month": "2026-08", "label": "قبض العمال", "source": "قبض العمال", "amount": 160000.0, "status": "مراجَع"}, {"sheet": 34, "date": "2026-08-30", "month": "2026-08", "label": "أحمد إبراهيم مصروف - إيجار السيارة وإصلاح", "source": "أحمد إبراهيم، تكاليف سيارة", "amount": 50000.0, "status": "مراجَع"}, {"sheet": 34, "date": "2026-08-30", "month": "2026-08", "label": "محمود عثمان - تأمينات -إيجار بلبيس - كابل الكهرباء للمكبس - خامة حديد - مصروف", "source": "تأمينات، تكاليف بلبيس، تكاليف مكبس، خامات، مصروف العمال", "amount": 130000.0, "status": "مراجَع"}, {"sheet": 34, "date": "2026-08-30", "month": "2026-08", "label": "كراتين - عدة", "source": "عدة، كرتون", "amount": 10000.0, "status": "مراجَع"}, {"sheet": 34, "date": "2026-08-30", "month": "2026-08", "label": "قبض موظفين + إيجار طوخ شهري", "source": "قبض موظفين", "amount": 111950.0, "status": "مراجَع"}, {"sheet": 34, "date": "2026-08-30", "month": "2026-08", "label": "إيجار طوخ و بلبيس", "source": "إيجار(طوخ ، بلبيس)", "amount": 38050.0, "status": "مراجَع"}, {"sheet": 35, "date": "2026-09-06", "month": "2026-09", "label": "قبض عمال", "source": "قبض العمال", "amount": 165000.0, "status": "مراجَع"}, {"sheet": 35, "date": "2026-09-06", "month": "2026-09", "label": "مصروف عمال", "source": "مصروف العمال", "amount": 30000.0, "status": "مراجَع"}, {"sheet": 35, "date": "2026-09-06", "month": "2026-09", "label": "استهلاكات - محروقات - عدة", "source": "استهلاكات، عدة، محروقات", "amount": 25000.0, "status": "مراجَع"}, {"sheet": 35, "date": "2026-09-06", "month": "2026-09", "label": "1000 كرتون", "source": "كرتون", "amount": 12000.0, "status": "مراجَع"}, {"sheet": 35, "date": "2026-09-06", "month": "2026-09", "label": "محمود عثمان مصاريف - انابيب - خامات اسطمبة", "source": "أنابيب، تكاليف بلبيس، خامات", "amount": 40000.0, "status": "مراجَع"}, {"sheet": 35, "date": "2026-09-06", "month": "2026-09", "label": "سلك و جلبة منير", "source": "جلبة وسلك", "amount": 97000.0, "status": "مراجَع"}];
+
+const MONTHS = [...new Set(ROWS.map(r => r.month))];
+
+function isDarkMode() {
+  const attr = document.documentElement.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function monthColor(idx, total, dark) {
+  const hue = Math.round((idx / total) * 360 + 8);
+  return {
+    dot: `hsl(${hue}, ${dark ? 55 : 58}%, ${dark ? 62 : 45}%)`,
+    bg: `hsl(${hue}, ${dark ? 32 : 48}%, ${dark ? 17 : 95}%)`,
+  };
+}
+
+function renderRawTable() {
+  const dark = isDarkMode();
+  const colors = {};
+  MONTHS.forEach((m, i) => { colors[m] = monthColor(i, MONTHS.length, dark); });
+
+  document.getElementById('raw-count').textContent = ROWS.length.toLocaleString('en-US');
+
+  const chips = document.getElementById('month-chips');
+  chips.innerHTML = MONTHS.map(m => {
+    const [y, mm] = m.split('-');
+    return `<div class="month-chip"><span class="dot" style="background:${colors[m].dot}"></span>${MONTH_NAMES[Number(mm) - 1]} ${y}</div>`;
+  }).join('');
+
+  const tbody = document.getElementById('raw-tbl-body');
+  tbody.innerHTML = '';
+  let curMonth = null;
+  ROWS.forEach(r => {
+    if (r.month !== curMonth) {
+      curMonth = r.month;
+      const monthRows = ROWS.filter(x => x.month === curMonth);
+      const subtotal = monthRows.reduce((s, x) => s + x.amount, 0);
+      const [y, mm] = curMonth.split('-');
+      const tr = document.createElement('tr');
+      tr.className = 'month-divider';
+      tr.innerHTML = `<td colspan="7"><span class="dot" style="background:${colors[curMonth].dot};display:inline-block;margin-inline-end:8px;vertical-align:middle"></span>${MONTH_NAMES[Number(mm) - 1]} ${y} — ${monthRows.length} بندًا · <span class="num">${fmt(subtotal)}</span></td>`;
+      tbody.appendChild(tr);
+    }
+    const tr = document.createElement('tr');
+    tr.className = 'raw-row';
+    tr.style.background = colors[r.month].bg;
+    tr.innerHTML = `
+      <td class="month-dot-cell"><span class="dot" style="background:${colors[r.month].dot}"></span></td>
+      <td class="num">#${r.sheet}</td>
+      <td class="num">${arDate(r.date)}</td>
+      <td>${r.label}</td>
+      <td class="src-cell">${r.source}</td>
+      <td class="num-col num">${fmt(r.amount)}</td>
+      <td>${r.status}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Monthly totals: bar chart, cumulative line, summary table ──────────────
+function computeMonthlyTotals() {
+  const totals = {};
+  ROWS.forEach(r => { totals[r.month] = (totals[r.month] || 0) + r.amount; });
+  let cum = 0;
+  return MONTHS.map(m => {
+    cum += totals[m];
+    return { month: m, total: totals[m], cumulative: cum };
+  });
+}
+function monthLabel(m) {
+  const [y, mm] = m.split('-');
+  return MONTH_NAMES[Number(mm) - 1];
+}
+function niceCeil(v) {
+  const mag = Math.pow(10, Math.floor(Math.log10(v)) - 1);
+  return Math.ceil(v / (mag * 5)) * (mag * 5);
+}
+
+function renderMonthlyBarChart() {
+  const dark = isDarkMode();
+  const data = computeMonthlyTotals();
+  const svg = document.getElementById('month-bar-svg');
+  svg.innerHTML = '';
+  const VW = 1000, VH = 380;
+  const mTop = 24, mBottom = 34, mLeft = 12, mRight = 12;
+  const plotW = VW - mLeft - mRight, plotH = VH - mTop - mBottom;
+  const maxVal = Math.max(...data.map(d => d.total));
+  const niceMax = niceCeil(maxVal);
+  const n = data.length;
+  const slot = plotW / n;
+  const barW = slot * 0.56;
+  const gridColor = cssVar('--border-soft');
+  const faintColor = cssVar('--ink-faint');
+  const inkColor = cssVar('--ink');
+
+  const steps = 5;
+  for (let i = 0; i <= steps; i++) {
+    const val = (niceMax / steps) * i;
+    const y = mTop + plotH - (val / niceMax) * plotH;
+    svg.appendChild(el('line', { x1: mLeft, x2: VW - mRight, y1: y, y2: y, stroke: gridColor, 'stroke-width': 1 }));
+    const label = el('text', { x: VW - mRight, y: y - 4, 'text-anchor': 'end', class: 'month-axis-value', style: 'font-size:10px', fill: faintColor });
+    label.textContent = fmt(val);
+    svg.appendChild(label);
+  }
+
+  data.forEach((d, i) => {
+    const cx = mLeft + i * slot + slot / 2;
+    const x = cx - barW / 2;
+    const h = (d.total / niceMax) * plotH;
+    const y = mTop + plotH - h;
+    const color = monthColor(i, n, dark).dot;
+    const rect = el('rect', { x, y, width: barW, height: h, fill: color, rx: 5, class: 'month-bar-rect' });
+    rect.addEventListener('mouseenter', e => showTooltipHTML(e, monthTooltipHTML(d)));
+    rect.addEventListener('mousemove', e => showTooltipHTML(e, monthTooltipHTML(d)));
+    rect.addEventListener('mouseleave', hideTooltip);
+    svg.appendChild(rect);
+
+    const valLabel = el('text', {
+      x: cx, y: y - 8, 'text-anchor': 'middle', class: 'month-axis-value', style: 'font-size:11px', fill: inkColor
+    });
+    valLabel.textContent = fmt(d.total);
+    svg.appendChild(valLabel);
+
+    const nameLabel = el('text', {
+      x: cx, y: VH - mBottom + 20, 'text-anchor': 'middle', class: 'month-axis-label', style: 'font-size:12px', fill: cssVar('--ink-muted')
+    });
+    nameLabel.textContent = monthLabel(d.month);
+    svg.appendChild(nameLabel);
+  });
+}
+
+function monthTooltipHTML(d) {
+  return `<div class="tt-title">${monthLabel(d.month)} ${d.month.slice(0, 4)}</div>
+    <div class="tt-row"><span>مصروفات الشهر</span><span class="num">${fmt(d.total)}</span></div>
+    <div class="tt-row"><span>الإجمالي المتراكم</span><span class="num">${fmt(d.cumulative)}</span></div>
+    <div class="tt-row"><span>نسبة من إجمالي السنة</span><span class="num">${pct(d.total / DATA.grand_total)}%</span></div>`;
+}
+
+function renderMonthlyLineChart() {
+  const data = computeMonthlyTotals();
+  const svg = document.getElementById('month-line-svg');
+  svg.innerHTML = '';
+  const VW = 1000, VH = 340;
+  const mTop = 24, mBottom = 34, mLeft = 12, mRight = 12;
+  const plotW = VW - mLeft - mRight, plotH = VH - mTop - mBottom;
+  const maxVal = data[data.length - 1].cumulative;
+  const niceMax = niceCeil(maxVal);
+  const n = data.length;
+  const gridColor = cssVar('--border-soft');
+  const faintColor = cssVar('--ink-faint');
+
+  const steps = 5;
+  for (let i = 0; i <= steps; i++) {
+    const val = (niceMax / steps) * i;
+    const y = mTop + plotH - (val / niceMax) * plotH;
+    svg.appendChild(el('line', { x1: mLeft, x2: VW - mRight, y1: y, y2: y, stroke: gridColor, 'stroke-width': 1 }));
+    const label = el('text', { x: VW - mRight, y: y - 4, 'text-anchor': 'end', class: 'month-axis-value', style: 'font-size:10px', fill: faintColor });
+    label.textContent = fmt(val);
+    svg.appendChild(label);
+  }
+
+  const pts = data.map((d, i) => ({
+    x: mLeft + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW),
+    y: mTop + plotH - (d.cumulative / niceMax) * plotH,
+    d
+  }));
+
+  const linePath = 'M ' + pts.map(p => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' L ');
+  svg.appendChild(el('path', { d: linePath, class: 'month-line-path' }));
+
+  const areaPath = linePath + ` L ${pts[pts.length - 1].x.toFixed(1)} ${mTop + plotH} L ${pts[0].x.toFixed(1)} ${mTop + plotH} Z`;
+  const areaEl = el('path', { d: areaPath, class: 'month-line-area' });
+  svg.insertBefore(areaEl, svg.firstChild);
+
+  pts.forEach(p => {
+    const dot = el('circle', { cx: p.x, cy: p.y, r: 5, class: 'month-line-dot' });
+    dot.addEventListener('mouseenter', e => showTooltipHTML(e, monthTooltipHTML(p.d)));
+    dot.addEventListener('mousemove', e => showTooltipHTML(e, monthTooltipHTML(p.d)));
+    dot.addEventListener('mouseleave', hideTooltip);
+    svg.appendChild(dot);
+
+    const valLabel = el('text', {
+      x: p.x, y: p.y - 12, 'text-anchor': 'middle', class: 'month-axis-value', style: 'font-size:11px', fill: cssVar('--ink')
+    });
+    valLabel.textContent = fmt(p.d.cumulative);
+    svg.appendChild(valLabel);
+
+    const nameLabel = el('text', {
+      x: p.x, y: VH - mBottom + 20, 'text-anchor': 'middle', class: 'month-axis-label', style: 'font-size:12px', fill: cssVar('--ink-muted')
+    });
+    nameLabel.textContent = monthLabel(p.d.month);
+    svg.appendChild(nameLabel);
+  });
+}
+
+function renderMonthlyTable() {
+  const dark = isDarkMode();
+  const data = computeMonthlyTotals();
+  const tbody = document.getElementById('month-tbl-body');
+  tbody.innerHTML = '';
+  data.forEach((d, i) => {
+    const color = monthColor(i, data.length, dark);
+    const share = d.total / DATA.grand_total;
+    const tr = document.createElement('tr');
+    tr.style.background = color.bg;
+    tr.innerHTML = `
+      <td class="month-dot-cell"><span class="dot" style="background:${color.dot}"></span></td>
+      <td class="src-name">${monthLabel(d.month)} ${d.month.slice(0, 4)}</td>
+      <td class="num-col num">${fmt(d.total)}</td>
+      <td class="num-col num">${fmt(d.cumulative)}</td>
+      <td>
+        <div class="share-bar-wrap">
+          <div class="share-bar-track"><div class="share-bar-fill" style="width:${(share * 100).toFixed(1)}%; background:${color.dot}"></div></div>
+          <span class="num" style="font-size:12px;color:var(--ink-muted);min-width:38px">${pct(share)}%</span>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Expenses vs bank debit/credit per month ────────────────────────────────
+// Monthly sums from the merged bank statements (txn dates 2026-02-08 .. 2026-08-31).
+// balance = closing balance after the month's last transaction, taken from
+// the statement's running balance (same-day rows re-chained by balance, since
+// the export's within-day row order isn't the posting order).
+const BANK = {
+  "2026-02": { debit: 2039470, credit: 2593380, balance: 2058050 },
+  "2026-03": { debit: 5780495, credit: 4723835, balance: 1001390 },
+  "2026-04": { debit: 3196820, credit: 2376883, balance: 181453 },
+  "2026-05": { debit: 1862011, credit: 3906568, balance: 2226010 },
+  "2026-06": { debit: 3892930, credit: 3529817, balance: 1862898 },
+  "2026-07": { debit: 3638135, credit: 2170115, balance: 394878 },
+  "2026-08": { debit: 5204305, credit: 5180966, balance: 371538 },
+};
+
+function renderBankLineChart() {
+  const exp = computeMonthlyTotals();
+  const months = exp.map(d => d.month);
+  const series = [
+    { key: 'exp',    name: 'المصروفات (الكشوف)',   color: cssVar('--series-exp'),    vals: exp.map(d => d.total) },
+    { key: 'debit',  name: 'مسحوبات البنك (مدين)', color: cssVar('--series-debit'),  vals: months.map(m => BANK[m] ? BANK[m].debit : null) },
+    { key: 'credit', name: 'إيداعات البنك (دائن)', color: cssVar('--series-credit'), vals: months.map(m => BANK[m] ? BANK[m].credit : null) },
+    { key: 'balance', name: 'رصيد نهاية الشهر', color: cssVar('--series-balance'), dashed: true, vals: months.map(m => BANK[m] ? BANK[m].balance : null) },
+  ];
+
+  const svg = document.getElementById('bank-line-svg');
+  svg.innerHTML = '';
+  const VW = 1000, VH = 380;
+  const mTop = 20, mBottom = 34, mLeft = 24, mRight = 70;
+  const plotW = VW - mLeft - mRight, plotH = VH - mTop - mBottom;
+  const all = series.flatMap(s => s.vals).filter(v => v != null);
+  const niceMax = niceCeil(Math.max(...all));
+  const n = months.length;
+  const xAt = i => mLeft + (i / (n - 1)) * plotW;
+  const yAt = v => mTop + plotH - (v / niceMax) * plotH;
+
+  const steps = 5;
+  for (let i = 0; i <= steps; i++) {
+    const val = (niceMax / steps) * i;
+    const y = yAt(val);
+    svg.appendChild(el('line', { x1: mLeft, x2: VW - mRight + 8, y1: y, y2: y, stroke: cssVar('--border-soft'), 'stroke-width': 1 }));
+    const label = el('text', { x: VW - 4, y: y + 4, 'text-anchor': 'end', class: 'month-axis-value', style: 'font-size:10px', fill: cssVar('--ink-faint') });
+    label.textContent = fmt(val);
+    svg.appendChild(label);
+  }
+
+  months.forEach((m, i) => {
+    const t = el('text', { x: xAt(i), y: VH - mBottom + 22, 'text-anchor': 'middle', class: 'month-axis-label', style: 'font-size:12px', fill: cssVar('--ink-muted') });
+    t.textContent = monthLabel(m);
+    svg.appendChild(t);
+  });
+
+  const cross = el('line', { x1: 0, x2: 0, y1: mTop, y2: mTop + plotH, stroke: cssVar('--ink-faint'), 'stroke-width': 1, 'stroke-dasharray': '3 3', opacity: 0 });
+  svg.appendChild(cross);
+
+  // Lines break at months with no data instead of dropping to zero.
+  series.forEach(s => {
+    let seg = [];
+    const flush = () => {
+      if (seg.length > 1) {
+        svg.appendChild(el('path', { d: 'M ' + seg.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L '), fill: 'none', stroke: s.color, 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', ...(s.dashed ? { 'stroke-dasharray': '7 5' } : {}) }));
+      }
+      seg = [];
+    };
+    s.vals.forEach((v, i) => { if (v == null) flush(); else seg.push([xAt(i), yAt(v)]); });
+    flush();
+  });
+
+  series.forEach(s => {
+    s.vals.forEach((v, i) => {
+      if (v == null) return;
+      svg.appendChild(el('circle', { cx: xAt(i), cy: yAt(v), r: 4.5, fill: s.color, stroke: cssVar('--surface'), 'stroke-width': 2 }));
+    });
+  });
+
+  const colW = plotW / (n - 1);
+  months.forEach((m, i) => {
+    const hit = el('rect', { x: xAt(i) - colW / 2, y: mTop, width: colW, height: plotH, fill: 'transparent', style: 'cursor:pointer' });
+    const show = e => {
+      cross.setAttribute('x1', xAt(i)); cross.setAttribute('x2', xAt(i)); cross.setAttribute('opacity', 1);
+      const rows = series.map(s => {
+        const v = s.vals[i];
+        return `<div class="tt-row"><span class="tt-key"><i style="background:${s.color}"></i>${s.name}</span><span class="num">${v == null ? '—' : fmt(v)}</span></div>`;
+      }).join('');
+      const b = BANK[m];
+      const net = b ? `<div class="tt-note">صافي حركة البنك (إيداع − سحب): <span class="num">${b.credit - b.debit >= 0 ? '+' : '−'}${fmt(Math.abs(b.credit - b.debit))}</span></div>`
+                    : `<div class="tt-note">لا توجد كشوف بنك لهذا الشهر</div>`;
+      const partial = m === '2026-02' ? `<div class="tt-note">أرقام البنك لفبراير جزئية (من 8 فبراير)</div>` : '';
+      showTooltipHTML(e, `<div class="tt-title">${monthLabel(m)} ${m.slice(0, 4)}</div>${rows}${net}${partial}`);
+    };
+    hit.addEventListener('mouseenter', show);
+    hit.addEventListener('mousemove', show);
+    hit.addEventListener('mouseleave', () => { cross.setAttribute('opacity', 0); hideTooltip(); });
+    svg.appendChild(hit);
+  });
+}
+
+render();
+renderRawTable();
+renderMonthlyBarChart();
+renderMonthlyLineChart();
+renderBankLineChart();
+renderMonthlyTable();
+const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+function refreshAll() {
+  try {
+  render();
+  renderRawTable();
+  renderMonthlyBarChart();
+  renderMonthlyLineChart();
+  renderBankLineChart();
+  renderMonthlyTable();
+} catch (err) {
+  document.body.innerHTML =
+    '<div style="padding:20px;font-family:Arial;color:red">' +
+    'JavaScript Error:<br><pre>' +
+    err.message +
+    '</pre></div>';
+
+  console.error(err);
+}
+}
+
+if (mediaQuery.addEventListener) {
+  mediaQuery.addEventListener('change', refreshAll);
+} else if (mediaQuery.addListener) {
+  mediaQuery.addListener(refreshAll);
+}
+window.addEventListener('resize', () => {});
+</script>
