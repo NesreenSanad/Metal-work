@@ -285,6 +285,8 @@ tr.raw-row .month-dot-cell { width: 26px; padding-inline-end: 0; }
       <div class="stat-pill"><div class="k">إجمالي المصروفات</div><div class="v num" id="stat-total">—</div></div>
       <div class="stat-pill"><div class="k">أكبر بند منفرد</div><div class="v steel" id="stat-top">—</div></div>
       <div class="stat-pill"><div class="k">مجموع تكلفة العمالة: أجور عمال، أجور موظفين، مصروف عمال، قبض العيد</div><div class="v amber" id="stat-labor">—</div></div>
+      <!-- مصروفات ثابتة شهرية لا تُكتب في كشوف المصروفات (سحب بنكي مباشر)، لذلك هي خارج الإجمالي أعلاه -->
+      <div class="stat-pill" id="stat-regular-pill" hidden><div class="k" id="stat-regular-k">مصروفات ثابتة شهرية (خارج الإجمالي)</div><div class="v steel" id="stat-regular">—</div></div>
     </div>
   </header>
 
@@ -320,6 +322,16 @@ tr.raw-row .month-dot-cell { width: 26px; padding-inline-end: 0; }
       كشوف البنك المتاحة تبدأ من <b>8 فبراير</b> وتنتهي في <b>31 أغسطس 2026</b> — لذلك يظهر يناير وسبتمبر بدون خطوط للبنك (لا توجد بيانات، وليس صفرًا)،
       ورقم فبراير للبنك جزئي (يبدأ من 8 فبراير).
     </div>
+  </section>
+
+  <!-- منحنى الرصيد: نقطة لكل معاملة بنكية، لا تجميع شهري -->
+  <section class="panel" id="balance-section" style="margin-top: 22px; display:none">
+    <div class="panel-head">
+      <h2>منحنى الرصيد البنكي عبر الزمن</h2>
+      <div class="hint">نقطة لكل معاملة — الرصيد بعدها مباشرةً · مرّر المؤشر لتفاصيل أي نقطة</div>
+    </div>
+    <div id="balance-holder"><svg id="balance-svg" viewBox="0 0 1000 380" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div class="chart-note" id="balance-note"></div>
   </section>
 
   <section class="table-panel" style="margin-top: 22px;">
@@ -404,6 +416,16 @@ tr.raw-row .month-dot-cell { width: 26px; padding-inline-end: 0; }
 
 <script>
 const DATA = {"grand_total": 13279147.0, "slices": [{"label": "قبض العمال", "value": 4819000.0, "count": 32, "compound": false}, {"label": "ضرائب", "value": 1106242.0, "count": 8, "compound": false}, {"label": "قبض موظفين", "value": 944700.0, "count": 8, "compound": false}, {"label": "جلبة وسلك", "value": 809871.0, "count": 10, "compound": false}, {"label": "شيكات مباشرة", "value": 764450.0, "count": 1, "compound": false}, {"label": "مصروف العمال", "value": 752000.0, "count": 27, "compound": false}, {"label": "استهلاكات، محروقات", "value": 610000.0, "count": 22, "compound": true}, {"label": "قبض العيد", "value": 406100.0, "count": 4, "compound": false}, {"label": "إيجار(طوخ ، بلبيس)", "value": 244400.0, "count": 10, "compound": true}, {"label": "تكاليف بلبيس", "value": 205000.0, "count": 14, "compound": false}, {"label": "نحاس", "value": 177084.0, "count": 4, "compound": false}, {"label": "تأمينات، تكاليف بلبيس", "value": 170950.0, "count": 3, "compound": true}, {"label": "تأمينات، تكاليف بلبيس، مصروف العمال، نحاس", "value": 170000.0, "count": 1, "compound": true}, {"label": "تأمينات", "value": 140200.0, "count": 5, "compound": false}, {"label": "تأمينات، تكاليف بلبيس، تكاليف مكبس، خامات، مصروف العمال", "value": 130000.0, "count": 1, "compound": true}, {"label": "ضرائب، قضايا و محاكم", "value": 115000.0, "count": 2, "compound": true}, {"label": "قضايا و محاكم", "value": 113000.0, "count": 4, "compound": false}, {"label": "مصنعيات، نحاس", "value": 100000.0, "count": 1, "compound": true}, {"label": "تأمينات، خامات", "value": 100000.0, "count": 1, "compound": true}, {"label": "تأمينات، محروقات", "value": 100000.0, "count": 1, "compound": true}, {"label": "مصروفات مجمعة", "value": 1301150.0, "count": 65, "compound": false, "other": true, "n_sources": 32}], "n_rows": 224, "n_sheets": 35, "date_from": "2026-01-04", "date_to": "2026-09-06"};
+
+// One point per bank transaction: {d: 'YYYY-MM-DD', b: balance-after}, in the
+// order the balance actually moved (same-day rows re-chained, see
+// backend/utility/bank_series.py). Empty here means no statements were loaded.
+const BALANCE = [{"d": "2026-02-08", "b": 1254140.68}, {"d": "2026-02-10", "b": 1179140.68}, {"d": "2026-02-11", "b": 1179130.68}, {"d": "2026-02-11", "b": 2060282.14}, {"d": "2026-02-12", "b": 1060282.14}, {"d": "2026-02-12", "b": 1060257.14}, {"d": "2026-02-12", "b": 926257.14}, {"d": "2026-02-12", "b": 931951.44}, {"d": "2026-02-15", "b": 2600517.47}, {"d": "2026-02-15", "b": 2600492.47}, {"d": "2026-02-15", "b": 2355492.47}, {"d": "2026-02-19", "b": 2355482.47}, {"d": "2026-02-19", "b": 2393450.47}, {"d": "2026-02-22", "b": 2143450.47}, {"d": "2026-02-22", "b": 2058450.47}, {"d": "2026-02-26", "b": 2058200.47}, {"d": "2026-02-26", "b": 2058050.47}, {"d": "2026-03-01", "b": 2057950.47}, {"d": "2026-03-01", "b": 1807950.47}, {"d": "2026-03-01", "b": 1587950.47}, {"d": "2026-03-02", "b": 1673040.29}, {"d": "2026-03-02", "b": 1673015.29}, {"d": "2026-03-02", "b": 2735786.56}, {"d": "2026-03-02", "b": 3750074.56}, {"d": "2026-03-02", "b": 3750049.56}, {"d": "2026-03-02", "b": 3750024.56}, {"d": "2026-03-02", "b": 3749824.56}, {"d": "2026-03-03", "b": 2109824.56}, {"d": "2026-03-03", "b": 2034824.56}, {"d": "2026-03-05", "b": 834824.56}, {"d": "2026-03-08", "b": 657824.56}, {"d": "2026-03-08", "b": 407824.56}, {"d": "2026-03-09", "b": 441458.56}, {"d": "2026-03-09", "b": 467654.56}, {"d": "2026-03-09", "b": 467629.56}, {"d": "2026-03-09", "b": 488141.56}, {"d": "2026-03-09", "b": 488116.56}, {"d": "2026-03-09", "b": 488091.56}, {"d": "2026-03-11", "b": 488081.56}, {"d": "2026-03-11", "b": 1315448.03}, {"d": "2026-03-12", "b": 1315248.03}, {"d": "2026-03-15", "b": 2526698.05}, {"d": "2026-03-15", "b": 2526673.05}, {"d": "2026-03-15", "b": 2306673.05}, {"d": "2026-03-17", "b": 2056673.05}, {"d": "2026-03-18", "b": 2056663.05}, {"d": "2026-03-18", "b": 2109943.05}, {"d": "2026-03-18", "b": 2109918.05}, {"d": "2026-03-18", "b": 2062918.05}, {"d": "2026-03-18", "b": 2091825.22}, {"d": "2026-03-24", "b": 891825.22}, {"d": "2026-03-25", "b": 1252165.0}, {"d": "2026-03-25", "b": 1252140.0}, {"d": "2026-03-29", "b": 1251990.0}, {"d": "2026-03-29", "b": 1001990.0}, {"d": "2026-03-31", "b": 1001740.0}, {"d": "2026-03-31", "b": 1001590.0}, {"d": "2026-03-31", "b": 1001390.0}, {"d": "2026-04-05", "b": 751390.0}, {"d": "2026-04-05", "b": 501390.0}, {"d": "2026-04-06", "b": 1264397.38}, {"d": "2026-04-06", "b": 1264372.38}, {"d": "2026-04-06", "b": 1264172.38}, {"d": "2026-04-06", "b": 1092172.38}, {"d": "2026-04-06", "b": 1231096.19}, {"d": "2026-04-07", "b": 1156096.19}, {"d": "2026-04-08", "b": 1156086.19}, {"d": "2026-04-08", "b": 1903113.41}, {"d": "2026-04-09", "b": 1653113.41}, {"d": "2026-04-09", "b": 1703113.41}, {"d": "2026-04-15", "b": 455113.41}, {"d": "2026-04-19", "b": 455103.41}, {"d": "2026-04-19", "b": 455078.41}, {"d": "2026-04-19", "b": 205078.41}, {"d": "2026-04-19", "b": 255078.41}, {"d": "2026-04-19", "b": 259823.66}, {"d": "2026-04-21", "b": 259798.66}, {"d": "2026-04-21", "b": 877283.65}, {"d": "2026-04-22", "b": 877083.65}, {"d": "2026-04-26", "b": 627083.65}, {"d": "2026-04-27", "b": 626933.65}, {"d": "2026-04-30", "b": 626683.65}, {"d": "2026-04-30", "b": 626658.65}, {"d": "2026-04-30", "b": 376658.65}, {"d": "2026-04-30", "b": 175758.65}, {"d": "2026-04-30", "b": 181452.95}, {"d": "2026-05-05", "b": 106452.95}, {"d": "2026-05-06", "b": 106442.95}, {"d": "2026-05-06", "b": 351341.08}, {"d": "2026-05-10", "b": 1416928.57}, {"d": "2026-05-10", "b": 1416903.57}, {"d": "2026-05-10", "b": 1166903.57}, {"d": "2026-05-11", "b": 938903.57}, {"d": "2026-05-12", "b": 938703.57}, {"d": "2026-05-12", "b": 1038703.57}, {"d": "2026-05-13", "b": 1038678.57}, {"d": "2026-05-13", "b": 1072422.57}, {"d": "2026-05-17", "b": 822422.57}, {"d": "2026-05-17", "b": 620422.57}, {"d": "2026-05-17", "b": 370422.57}, {"d": "2026-05-18", "b": 470422.57}, {"d": "2026-05-19", "b": 470397.57}, {"d": "2026-05-19", "b": 1029407.52}, {"d": "2026-05-20", "b": 1372614.51}, {"d": "2026-05-20", "b": 1372589.51}, {"d": "2026-05-20", "b": 1372579.51}, {"d": "2026-05-20", "b": 1887447.28}, {"d": "2026-05-21", "b": 1745181.28}, {"d": "2026-05-24", "b": 2690435.44}, {"d": "2026-05-24", "b": 2690410.44}, {"d": "2026-05-24", "b": 2440410.44}, {"d": "2026-05-24", "b": 2226410.44}, {"d": "2026-05-25", "b": 2226160.44}, {"d": "2026-05-25", "b": 2226010.44}, {"d": "2026-06-02", "b": 1976010.44}, {"d": "2026-06-03", "b": 949460.44}, {"d": "2026-06-07", "b": 699460.44}, {"d": "2026-06-07", "b": 449460.44}, {"d": "2026-06-08", "b": 449260.44}, {"d": "2026-06-09", "b": 374260.44}, {"d": "2026-06-10", "b": 464260.44}, {"d": "2026-06-14", "b": 464235.44}, {"d": "2026-06-14", "b": 1391489.69}, {"d": "2026-06-14", "b": 1141489.69}, {"d": "2026-06-17", "b": 1141289.69}, {"d": "2026-06-17", "b": 1141279.69}, {"d": "2026-06-17", "b": 1913688.7}, {"d": "2026-06-21", "b": 1663688.7}, {"d": "2026-06-22", "b": 1663388.7}, {"d": "2026-06-22", "b": 1586268.7}, {"d": "2026-06-24", "b": 2201364.34}, {"d": "2026-06-24", "b": 2201339.34}, {"d": "2026-06-24", "b": 2251339.34}, {"d": "2026-06-28", "b": 2251189.34}, {"d": "2026-06-28", "b": 2250989.34}, {"d": "2026-06-28", "b": 2000989.34}, {"d": "2026-06-28", "b": 1750989.34}, {"d": "2026-06-28", "b": 1736539.34}, {"d": "2026-06-28", "b": 1486539.34}, {"d": "2026-06-29", "b": 788289.34}, {"d": "2026-06-30", "b": 1838039.64}, {"d": "2026-06-30", "b": 1838014.64}, {"d": "2026-06-30", "b": 1837989.64}, {"d": "2026-06-30", "b": 1863297.64}, {"d": "2026-06-30", "b": 1863047.64}, {"d": "2026-06-30", "b": 1862897.64}, {"d": "2026-07-05", "b": 1862697.64}, {"d": "2026-07-05", "b": 1362697.64}, {"d": "2026-07-05", "b": 1112697.64}, {"d": "2026-07-06", "b": 612697.64}, {"d": "2026-07-12", "b": 522697.64}, {"d": "2026-07-12", "b": 272697.64}, {"d": "2026-07-12", "b": 197697.64}, {"d": "2026-07-13", "b": 1496184.4}, {"d": "2026-07-13", "b": 1496159.4}, {"d": "2026-07-14", "b": 1549941.23}, {"d": "2026-07-15", "b": 1549741.23}, {"d": "2026-07-16", "b": 1549731.23}, {"d": "2026-07-16", "b": 2367577.62}, {"d": "2026-07-19", "b": 2117577.62}, {"d": "2026-07-19", "b": 2067577.62}, {"d": "2026-07-21", "b": 2067377.62}, {"d": "2026-07-26", "b": 1375277.62}, {"d": "2026-07-26", "b": 1125277.62}, {"d": "2026-07-26", "b": 895277.62}, {"d": "2026-07-27", "b": 895127.62}, {"d": "2026-07-29", "b": 395127.62}, {"d": "2026-07-30", "b": 394877.62}, {"d": "2026-08-02", "b": 1240530.85}, {"d": "2026-08-02", "b": 1856545.17}, {"d": "2026-08-02", "b": 1856520.17}, {"d": "2026-08-02", "b": 1856495.17}, {"d": "2026-08-02", "b": 2811760.59}, {"d": "2026-08-02", "b": 2811735.59}, {"d": "2026-08-02", "b": 2563735.59}, {"d": "2026-08-02", "b": 2488735.59}, {"d": "2026-08-03", "b": 2488535.59}, {"d": "2026-08-03", "b": 1988535.59}, {"d": "2026-08-03", "b": 1786415.59}, {"d": "2026-08-03", "b": 1536415.59}, {"d": "2026-08-04", "b": 1560835.59}, {"d": "2026-08-04", "b": 1560810.59}, {"d": "2026-08-04", "b": 1594776.59}, {"d": "2026-08-04", "b": 1594751.59}, {"d": "2026-08-05", "b": 1594741.59}, {"d": "2026-08-05", "b": 2471210.62}, {"d": "2026-08-09", "b": 1471210.62}, {"d": "2026-08-09", "b": 1221210.62}, {"d": "2026-08-09", "b": 1013210.62}, {"d": "2026-08-10", "b": 1013010.62}, {"d": "2026-08-10", "b": 1971124.31}, {"d": "2026-08-10", "b": 1971099.31}, {"d": "2026-08-11", "b": 1721099.31}, {"d": "2026-08-12", "b": 1471099.31}, {"d": "2026-08-13", "b": 1221099.31}, {"d": "2026-08-16", "b": 981099.31}, {"d": "2026-08-16", "b": 731099.31}, {"d": "2026-08-17", "b": 730899.31}, {"d": "2026-08-17", "b": 480899.31}, {"d": "2026-08-17", "b": 230899.31}, {"d": "2026-08-23", "b": 1101963.37}, {"d": "2026-08-23", "b": 1101938.37}, {"d": "2026-08-23", "b": 901938.37}, {"d": "2026-08-24", "b": 871938.37}, {"d": "2026-08-30", "b": 871788.37}, {"d": "2026-08-30", "b": 621788.37}, {"d": "2026-08-30", "b": 371788.37}, {"d": "2026-08-31", "b": 371538.37}];
+
+// Fixed monthly expenses in force over the reported period, one row per month:
+// {month, amount, name, name_ar}. Rebuilt from backend/utility/regular_expenses.json
+// by build_expense_report.py; empty here means none are configured.
+const REGULAR = [{"month": "2026-01", "amount": 75000.0, "name": "M.S. Home Expenses", "name_ar": "مصروفات منزل م.س"}, {"month": "2026-02", "amount": 75000.0, "name": "M.S. Home Expenses", "name_ar": "مصروفات منزل م.س"}, {"month": "2026-03", "amount": 75000.0, "name": "M.S. Home Expenses", "name_ar": "مصروفات منزل م.س"}, {"month": "2026-04", "amount": 75000.0, "name": "M.S. Home Expenses", "name_ar": "مصروفات منزل م.س"}, {"month": "2026-05", "amount": 75000.0, "name": "M.S. Home Expenses", "name_ar": "مصروفات منزل م.س"}, {"month": "2026-06", "amount": 75000.0, "name": "M.S. Home Expenses", "name_ar": "مصروفات منزل م.س"}, {"month": "2026-07", "amount": 75000.0, "name": "M.S. Home Expenses", "name_ar": "مصروفات منزل م.س"}, {"month": "2026-08", "amount": 75000.0, "name": "M.S. Home Expenses", "name_ar": "مصروفات منزل م.س"}, {"month": "2026-09", "amount": 75000.0, "name": "M.S. Home Expenses", "name_ar": "مصروفات منزل م.س"}];
 
 const fmt = n => Math.round(n).toLocaleString('en-US');
 const pct = n => (n * 100).toFixed(1).replace(/\.0$/, '');
@@ -635,7 +657,134 @@ function render() {
   const otherSlice = slices.find(s => s.other);
   document.getElementById('legend-n-other').textContent = otherSlice.n_sources;
 
+  renderRegularStat();
   renderTable(slices);
+}
+
+// Fixed monthly expenses (REGULAR) are standing bank withdrawals that never
+// appear on the weekly sheets, so they are deliberately NOT folded into
+// DATA.grand_total — adding them would make this report's total stop matching
+// the app's own expenses page and every earlier version of this page. They are
+// shown as their own figure, with the per-month rate(s) that produced it.
+// The pill stays hidden when there is nothing to show.
+function renderRegularStat() {
+  const pill = document.getElementById('stat-regular-pill');
+  if (!pill) return;
+  const rows = (typeof REGULAR !== 'undefined' && Array.isArray(REGULAR)) ? REGULAR : [];
+  if (!rows.length) { pill.hidden = true; return; }
+
+  const total = rows.reduce((sum, r) => sum + r.amount, 0);
+  document.getElementById('stat-regular').textContent = fmt(total);
+
+  const rates = [...new Set(rows.map(r => r.amount))].sort((a, b) => a - b);
+  const name = rows[0].name_ar || rows[0].name || 'مصروفات ثابتة';
+  const ratesText = rates.map(a => fmt(a)).join(' ثم ') + ' شهريًا';
+  document.getElementById('stat-regular-k').textContent =
+    `${name} — ${ratesText} · ${rows.length} شهر (خارج الإجمالي)`;
+  pill.hidden = false;
+}
+
+// ── Bank balance curve ──────────────────────────────────────────────────────
+// One point per transaction rather than per month, so the shape shows what the
+// monthly closing figures hide: how deep the account actually ran between the
+// month ends. X is real elapsed time, not an index, so a quiet fortnight reads
+// as a gap rather than as evenly-spaced activity. Y starts at zero so the dips
+// are read against the whole balance, not an exaggerated window.
+function renderBalanceChart() {
+  const section = document.getElementById('balance-section');
+  if (!section) return;
+  const pts = (typeof BALANCE !== 'undefined' && Array.isArray(BALANCE)) ? BALANCE : [];
+  if (pts.length < 2) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  const svg = document.getElementById('balance-svg');
+  svg.innerHTML = '';
+  const VW = 1000, VH = 380;
+  const mTop = 20, mBottom = 34, mLeft = 24, mRight = 70;
+  const plotW = VW - mLeft - mRight, plotH = VH - mTop - mBottom;
+
+  const t = d => Date.parse(d + 'T00:00:00Z');
+  const t0 = t(pts[0].d), t1 = t(pts[pts.length - 1].d);
+  const span = Math.max(1, t1 - t0);
+  const niceMax = niceCeil(Math.max(...pts.map(p => p.b)));
+  const xAt = d => mLeft + ((t(d) - t0) / span) * plotW;
+  const yAt = v => mTop + plotH - (v / niceMax) * plotH;
+
+  const steps = 5;
+  for (let i = 0; i <= steps; i++) {
+    const val = (niceMax / steps) * i;
+    const y = yAt(val);
+    svg.appendChild(el('line', { x1: mLeft, x2: VW - mRight + 8, y1: y, y2: y, stroke: cssVar('--border-soft'), 'stroke-width': 1 }));
+    const label = el('text', { x: VW - 4, y: y + 4, 'text-anchor': 'end', style: 'font-size:10px', fill: cssVar('--ink-faint') });
+    label.textContent = fmt(val);
+    svg.appendChild(label);
+  }
+
+  // One tick per month, placed on the first of that month.
+  const months = [...new Set(pts.map(p => p.d.slice(0, 7)))];
+  months.forEach(m => {
+    const x = xAt(m + '-01');
+    if (x < mLeft - 1 || x > VW - mRight + 1) return;
+    svg.appendChild(el('line', { x1: x, x2: x, y1: mTop, y2: mTop + plotH, stroke: cssVar('--border-soft'), 'stroke-width': 1, 'stroke-dasharray': '2 4' }));
+    const label = el('text', { x: x, y: VH - mBottom + 22, 'text-anchor': 'middle', style: 'font-size:12px', fill: cssVar('--ink-muted') });
+    label.textContent = monthLabel(m);
+    svg.appendChild(label);
+  });
+
+  const line = pts.map(p => [xAt(p.d), yAt(p.b)]);
+  const color = cssVar('--series-balance');
+  svg.appendChild(el('path', {
+    d: 'M ' + line.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L ') +
+       ` L ${line[line.length - 1][0].toFixed(1)} ${(mTop + plotH).toFixed(1)} L ${line[0][0].toFixed(1)} ${(mTop + plotH).toFixed(1)} Z`,
+    fill: color, opacity: 0.10,
+  }));
+  svg.appendChild(el('path', {
+    d: 'M ' + line.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L '),
+    fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round',
+  }));
+
+  // Highest and lowest points, labelled — the two anyone looks for.
+  const hi = pts.reduce((a, p) => (p.b > a.b ? p : a), pts[0]);
+  const lo = pts.reduce((a, p) => (p.b < a.b ? p : a), pts[0]);
+  [[hi, -10, cssVar('--series-credit')], [lo, 16, cssVar('--series-debit')]].forEach(([p, dy, c]) => {
+    svg.appendChild(el('circle', { cx: xAt(p.d), cy: yAt(p.b), r: 4.5, fill: c, stroke: cssVar('--surface'), 'stroke-width': 2 }));
+    const label = el('text', { x: Math.min(Math.max(xAt(p.d), mLeft + 40), VW - mRight - 40), y: yAt(p.b) + dy, 'text-anchor': 'middle', style: 'font-size:11px;font-weight:700', fill: c });
+    label.textContent = fmt(p.b);
+    svg.appendChild(label);
+  });
+
+  const cross = el('line', { x1: 0, x2: 0, y1: mTop, y2: mTop + plotH, stroke: cssVar('--ink-faint'), 'stroke-width': 1, 'stroke-dasharray': '3 3', opacity: 0 });
+  svg.appendChild(cross);
+  const dot = el('circle', { cx: 0, cy: 0, r: 4, fill: color, stroke: cssVar('--surface'), 'stroke-width': 2, opacity: 0 });
+  svg.appendChild(dot);
+
+  // A single overlay that picks the nearest point, rather than 208 hit areas.
+  const overlay = el('rect', { x: mLeft, y: mTop, width: plotW, height: plotH, fill: 'transparent', style: 'cursor:crosshair' });
+  const move = e => {
+    const box = svg.getBoundingClientRect();
+    const xSvg = ((e.clientX - box.left) / box.width) * VW;
+    let best = 0, bestDist = Infinity;
+    line.forEach((p, i) => { const d = Math.abs(p[0] - xSvg); if (d < bestDist) { bestDist = d; best = i; } });
+    const p = pts[best];
+    cross.setAttribute('x1', line[best][0]); cross.setAttribute('x2', line[best][0]); cross.setAttribute('opacity', 1);
+    dot.setAttribute('cx', line[best][0]); dot.setAttribute('cy', line[best][1]); dot.setAttribute('opacity', 1);
+    const prev = best > 0 ? pts[best - 1].b : null;
+    const delta = prev == null ? null : p.b - prev;
+    const deltaRow = delta == null ? '' :
+      `<div class="tt-row"><span class="tt-key">الحركة</span><span class="num">${delta >= 0 ? '+' : '−'}${fmt(Math.abs(delta))}</span></div>`;
+    showTooltipHTML(e, `<div class="tt-title">${arDate(p.d)}</div>` +
+      `<div class="tt-row"><span class="tt-key"><i style="background:${color}"></i>الرصيد</span><span class="num">${fmt(p.b)}</span></div>${deltaRow}`);
+  };
+  overlay.addEventListener('mouseenter', move);
+  overlay.addEventListener('mousemove', move);
+  overlay.addEventListener('mouseleave', () => { cross.setAttribute('opacity', 0); dot.setAttribute('opacity', 0); hideTooltip(); });
+  svg.appendChild(overlay);
+
+  const note = document.getElementById('balance-note');
+  if (note) {
+    note.innerHTML = `${pts.length} معاملة بنكية من <b>${arDate(pts[0].d)}</b> إلى <b>${arDate(pts[pts.length - 1].d)}</b> · ` +
+      `أعلى رصيد <b class="num">${fmt(hi.b)}</b> في ${arDate(hi.d)} · أدنى رصيد <b class="num">${fmt(lo.b)}</b> في ${arDate(lo.d)}`;
+  }
 }
 
 function pickTextColor(hex) {
@@ -905,15 +1054,7 @@ function renderMonthlyTable() {
 // balance = closing balance after the month's last transaction, taken from
 // the statement's running balance (same-day rows re-chained by balance, since
 // the export's within-day row order isn't the posting order).
-const BANK = {
-  "2026-02": { debit: 2039470, credit: 2593380, balance: 2058050 },
-  "2026-03": { debit: 5780495, credit: 4723835, balance: 1001390 },
-  "2026-04": { debit: 3196820, credit: 2376883, balance: 181453 },
-  "2026-05": { debit: 1862011, credit: 3906568, balance: 2226010 },
-  "2026-06": { debit: 3892930, credit: 3529817, balance: 1862898 },
-  "2026-07": { debit: 3638135, credit: 2170115, balance: 394878 },
-  "2026-08": { debit: 5204305, credit: 5180966, balance: 371538 },
-};
+const BANK = {"2026-02": {"debit": 2039470.0, "credit": 2593379.79, "balance": 2058050.47}, "2026-03": {"debit": 5780495.0, "credit": 4723834.53, "balance": 1001390.0}, "2026-04": {"debit": 3196820.0, "credit": 2376882.95, "balance": 181452.95}, "2026-05": {"debit": 1862011.0, "credit": 3906568.49, "balance": 2226010.44}, "2026-06": {"debit": 3892930.0, "credit": 3529817.2, "balance": 1862897.64}, "2026-07": {"debit": 3638135.0, "credit": 2170114.98, "balance": 394877.62}, "2026-08": {"debit": 5204305.0, "credit": 5180965.75, "balance": 371538.37}};
 
 function renderBankLineChart() {
   const exp = computeMonthlyTotals();
@@ -1002,6 +1143,7 @@ renderRawTable();
 renderMonthlyBarChart();
 renderMonthlyLineChart();
 renderBankLineChart();
+renderBalanceChart();
 renderMonthlyTable();
 const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -1012,6 +1154,7 @@ function refreshAll() {
   renderMonthlyBarChart();
   renderMonthlyLineChart();
   renderBankLineChart();
+  renderBalanceChart();
   renderMonthlyTable();
 } catch (err) {
   document.body.innerHTML =
