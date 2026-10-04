@@ -315,7 +315,7 @@ tr.raw-row .month-dot-cell { width: 26px; padding-inline-end: 0; }
     <div class="eyebrow">سجل مصروفات يومية · ورشة تشغيل معادن</div>
     <h1>تحليل المصروفات الشهرية</h1>
     <div class="subhead">
-      تجميع <span class="num" id="hdr-rows">—</span> بندًا من <span class="num" id="hdr-sheets">—</span> كشف مصروفات اسبوعية،
+      تجميع <span class="num" id="hdr-rows">—</span> بندًا من <span class="num" id="hdr-sheets">—</span> كشف مصروفات،
       من <b id="hdr-from">—</b> إلى <b id="hdr-to">—</b>، حسب مصدر الصرف بالضبط كما كُتب في كل كشف —
       فتُحسب "محمود عثمان" وحدها بمعزل عن "محمود عثمان، خامات" كسطرين مختلفين، تمامًا كما يميّزهما دفتر الكشوف نفسه.
     </div>
@@ -361,19 +361,32 @@ tr.raw-row .month-dot-cell { width: 26px; padding-inline-end: 0; }
   <section class="panel" style="margin-top: 22px;">
     <div class="panel-head">
       <h2>المصروفات مقابل حركة البنك <span class="head-period" id="bank-period"></span></h2>
-      <div class="hint">مرّر المؤشر على أي شهر لمقارنة القيم الأربع · الخط المتقطع رصيد وليس حركة</div>
+      <div class="hint">حركة الشهر فقط — ثلاث قيم على مقياس واحد · مرّر المؤشر على أي شهر لمقارنتها · الرصيد في الرسم التالي</div>
     </div>
+    <!-- أُخرج الرصيد من هنا: هو مقدار متراكم لا حركة شهرية، فوضعه على المقياس
+         نفسه يسحق الخطوط الثلاثة (أو يستدعي محورًا ثانيًا يُضلّل القارئ).
+         مكانه الطبيعي قسم "منحنى الرصيد البنكي" أدناه. -->
     <div class="series-legend">
       <span class="series-key"><span class="series-swatch" style="background:var(--series-exp)"></span>المصروفات (الكشوف)</span>
       <span class="series-key"><span class="series-swatch" style="background:var(--series-debit)"></span>مسحوبات البنك (مدين)</span>
       <span class="series-key"><span class="series-swatch" style="background:var(--series-credit)"></span>إيداعات البنك (دائن)</span>
-      <span class="series-key"><span class="series-swatch dashed" style="--c:var(--series-balance)"></span>رصيد البنك في نهاية الشهر</span>
     </div>
     <div id="bank-line-holder"><svg id="bank-line-svg" viewBox="0 0 1000 380" preserveAspectRatio="xMidYMid meet"></svg></div>
     <div class="chart-note">
       كشوف البنك المتاحة تبدأ من <b>8 فبراير</b> وتنتهي في <b>31 أغسطس 2026</b> — لذلك يظهر يناير وسبتمبر بدون خطوط للبنك (لا توجد بيانات، وليس صفرًا)،
       ورقم فبراير للبنك جزئي (يبدأ من 8 فبراير).
     </div>
+  </section>
+
+  <!-- مدى الرصيد شهريًا: رصيد الإقفال وحده يخفي ما جرى داخل الشهر — شهر أقفل
+       على 2.2 مليون كان قد نزل إلى 106 آلاف. العمود يُظهر المدى كاملًا. -->
+  <section class="panel" id="balance-range-section" style="margin-top: 22px; display:none">
+    <div class="panel-head">
+      <h2>مدى الرصيد البنكي شهريًا</h2>
+      <div class="hint">كل عمود من أدنى رصيد في الشهر إلى أعلاه · النقطة = رصيد آخر الشهر · مرّر المؤشر للتفاصيل</div>
+    </div>
+    <div id="balance-range-holder"><svg id="balance-range-svg" viewBox="0 0 1000 380" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div class="chart-note" id="balance-range-note"></div>
   </section>
 
   <!-- منحنى الرصيد: نقطة لكل معاملة بنكية، لا تجميع شهري -->
@@ -949,6 +962,109 @@ function renderAtomicTable() {
   }
 }
 
+// ── مدى الرصيد شهريًا ───────────────────────────────────────────────────────
+// عمود لكل شهر من أدنى رصيد إلى أعلاه، ونقطة عند رصيد آخر الشهر. رصيد الإقفال
+// وحده مضلّل هنا: أبريل أقفل على 181 ألفًا بعد أن بلغ 1.9 مليون، ومايو أقفل على
+// 2.2 مليون بعد أن نزل إلى 106 آلاف. المطلوب إداريًا هو القاع، لا الإقفال.
+function renderBalanceRangeChart() {
+  const section = document.getElementById('balance-range-section');
+  if (!section) return;
+  const pts = (typeof BALANCE !== 'undefined' && Array.isArray(BALANCE)) ? BALANCE : [];
+  if (pts.length < 2) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  const byMonth = new Map();
+  pts.forEach(p => {
+    const m = p.d.slice(0, 7);
+    if (!byMonth.has(m)) byMonth.set(m, { month: m, min: p.b, max: p.b, close: p.b, n: 0, minDate: p.d, maxDate: p.d });
+    const e = byMonth.get(m);
+    if (p.b < e.min) { e.min = p.b; e.minDate = p.d; }
+    if (p.b > e.max) { e.max = p.b; e.maxDate = p.d; }
+    e.close = p.b;          // BALANCE مرتّب زمنيًا، فآخر نقطة هي الإقفال
+    e.n++;
+  });
+  const data = [...byMonth.values()];
+
+  const svg = document.getElementById('balance-range-svg');
+  svg.innerHTML = '';
+  const VW = 1000, VH = 380;
+  const mTop = 26, mBottom = 38, mLeft = 12, mRight = 76;
+  const plotW = VW - mLeft - mRight, plotH = VH - mTop - mBottom;
+  const niceMax = niceCeil(Math.max(...data.map(d => d.max)));
+  const yAt = v => mTop + plotH - (v / niceMax) * plotH;
+  const n = data.length, slot = plotW / n, barW = Math.min(30, slot * 0.26);
+
+  const steps = 5;
+  for (let i = 0; i <= steps; i++) {
+    const val = (niceMax / steps) * i;
+    const y = yAt(val);
+    svg.appendChild(el('line', { x1: mLeft, x2: VW - mRight + 8, y1: y, y2: y,
+      stroke: cssVar('--border-soft'), 'stroke-width': 1 }));
+    const lab = el('text', { x: VW - 4, y: y + 4, 'text-anchor': 'start',
+      style: 'font-size:10px', fill: cssVar('--ink-faint') });
+    lab.textContent = fmt(val);
+    svg.appendChild(lab);
+  }
+
+  // خط عند أدنى رصيد بلغه الحساب في الفترة كلها — القاع هو الرقم الذي يُسأل عنه
+  const lowest = data.reduce((a, d) => (d.min < a.min ? d : a), data[0]);
+  const lowY = yAt(lowest.min);
+  svg.appendChild(el('line', { x1: mLeft, x2: VW - mRight, y1: lowY, y2: lowY,
+    stroke: cssVar('--chart-up'), 'stroke-width': 1.5, 'stroke-dasharray': '6 5' }));
+  // الملصق عند الطرف الأيسر: الأيمن مزدحم بملصقات أدنى قيم آخر الأشهر
+  const lowText = `أدنى رصيد في الفترة ${fmt(lowest.min)}`;
+  const lowLab = el('text', { x: mLeft, y: lowY - 7, 'text-anchor': 'end',
+    style: 'font-size:10.5px;font-weight:600;paint-order:stroke;stroke:' + cssVar('--surface') + ';stroke-width:3px;stroke-linejoin:round',
+    fill: cssVar('--chart-up') });
+  lowLab.textContent = lowText;
+  svg.appendChild(lowLab);
+
+  data.forEach((d, i) => {
+    const cx = mLeft + i * slot + slot / 2;
+    const yTop = yAt(d.max), yBot = yAt(d.min);
+    const bar = el('rect', {
+      x: cx - barW / 2, y: yTop, width: barW, height: Math.max(yBot - yTop, 2), rx: 5,
+      fill: cssVar('--chart-bar'), opacity: .85
+    });
+    const tip = () => `<div class="tt-title">${monthLabel(d.month)} ${d.month.slice(0, 4)}</div>
+      <div class="tt-row"><span>أعلى رصيد</span><span class="num">${fmt(d.max)}</span></div>
+      <div class="tt-row"><span>أدنى رصيد</span><span class="num">${fmt(d.min)}</span></div>
+      <div class="tt-row"><span>رصيد آخر الشهر</span><span class="num">${fmt(d.close)}</span></div>
+      <div class="tt-row"><span>المدى</span><span class="num">${fmt(d.max - d.min)}</span></div>`;
+    bar.addEventListener('mouseenter', e => showTooltipHTML(e, tip()));
+    bar.addEventListener('mousemove', e => showTooltipHTML(e, tip()));
+    bar.addEventListener('mouseleave', hideTooltip);
+    svg.appendChild(bar);
+
+    // نقطة الإقفال: حلقة بلون السطح تفصلها عن العمود تحتها
+    svg.appendChild(el('circle', { cx, cy: yAt(d.close), r: 5,
+      fill: cssVar('--ink'), stroke: cssVar('--surface'), 'stroke-width': 2 }));
+
+    const maxLab = el('text', { x: cx, y: yTop - 8, 'text-anchor': 'middle',
+      style: 'font-size:10.5px;font-weight:600', fill: cssVar('--ink-muted') });
+    maxLab.textContent = fmt(d.max);
+    svg.appendChild(maxLab);
+
+    const minLab = el('text', { x: cx, y: yBot + 15, 'text-anchor': 'middle',
+      style: 'font-size:10.5px;font-weight:700;paint-order:stroke;stroke:' + cssVar('--surface') + ';stroke-width:3px;stroke-linejoin:round',
+      fill: cssVar('--ink') });
+    minLab.textContent = fmt(d.min);
+    svg.appendChild(minLab);
+
+    const nameLab = el('text', { x: cx, y: VH - 12, 'text-anchor': 'middle',
+      style: 'font-size:12px', fill: cssVar('--ink-muted') });
+    nameLab.textContent = monthLabel(d.month);
+    svg.appendChild(nameLab);
+  });
+
+  const note = document.getElementById('balance-range-note');
+  if (note) {
+    note.innerHTML = `النقطة الداكنة رصيد آخر الشهر، وطول العمود هو الفارق بين أدنى وأعلى رصيد داخله. ` +
+      `أدنى رصيد بلغه الحساب كان <b>${fmt(lowest.min)}</b> في <b>${arDate(lowest.minDate)}</b>، ` +
+      `بينما أقفل ذلك الشهر على <b>${fmt(lowest.close)}</b> — ولهذا لا يكفي رصيد الإقفال وحده لقراءة وضع السيولة.`;
+  }
+}
+
 // ── Bank balance curve ──────────────────────────────────────────────────────
 // One point per transaction rather than per month, so the shape shows what the
 // monthly closing figures hide: how deep the account actually ran between the
@@ -998,13 +1114,17 @@ function renderBalanceChart() {
 
   const line = pts.map(p => [xAt(p.d), yAt(p.b)]);
   const color = cssVar('--series-balance');
+  // خط درجي لا مائل: الرصيد يثبت كما هو حتى المعاملة التالية، فالخط المائل
+  // بينهما يوحي بتدرّج لم يحدث.
+  const stepPath = line.reduce((d, p, i) =>
+    i === 0 ? `M ${p[0].toFixed(1)} ${p[1].toFixed(1)}`
+            : `${d} L ${p[0].toFixed(1)} ${line[i - 1][1].toFixed(1)} L ${p[0].toFixed(1)} ${p[1].toFixed(1)}`, '');
   svg.appendChild(el('path', {
-    d: 'M ' + line.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L ') +
-       ` L ${line[line.length - 1][0].toFixed(1)} ${(mTop + plotH).toFixed(1)} L ${line[0][0].toFixed(1)} ${(mTop + plotH).toFixed(1)} Z`,
+    d: stepPath + ` L ${line[line.length - 1][0].toFixed(1)} ${(mTop + plotH).toFixed(1)} L ${line[0][0].toFixed(1)} ${(mTop + plotH).toFixed(1)} Z`,
     fill: color, opacity: 0.10,
   }));
   svg.appendChild(el('path', {
-    d: 'M ' + line.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L '),
+    d: stepPath,
     fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round',
   }));
 
@@ -1222,9 +1342,13 @@ function renderExecSummary() {
   const partialNote = m => (m === partialMonth)
     ? ` · بيانات الشهر غير مكتملة (حتى ${arDate(DATA.date_to)})` : '';
 
-  // الكشوف أسبوعية، فعدد الأسابيع هو المدى الزمني نفسه مقيسًا بالأسابيع
-  const weeks = Math.round(
-    (new Date(DATA.date_to) - new Date(DATA.date_from)) / (7 * 24 * 3600 * 1000)) + 1;
+  // عدد الأسابيع = المدى الزمني بين أول كشف وآخره مقيسًا بالأسابيع
+  const spanDays = Math.round(
+    (new Date(DATA.date_to) - new Date(DATA.date_from)) / (24 * 3600 * 1000));
+  const weeks = Math.round(spanDays / 7);
+  // الكشوف ليست أسبوعية بالضبط (منها ما يفصله ١٤ يومًا ومنها ما يفصله يومان)،
+  // فيُذكر المعدّل الفعلي بدل وصفها بـ"أسبوعية".
+  const daysPerSheet = DATA.n_sheets > 1 ? spanDays / (DATA.n_sheets - 1) : 0;
 
   const kpi = (k, v, s, cls = '', small = false) => `
     <div class="exec-kpi ${cls}">
@@ -1238,7 +1362,7 @@ function renderExecSummary() {
 
   grid.innerHTML = [
     kpi('إجمالي المصروفات (الكشوف)', fmt(total),
-        `${sheetsWord(DATA.n_sheets)} أسبوعيًا · ${arCount(weeks, 'أسبوع واحد', 'أسبوعان', 'أسابيع', 'أسبوعًا')} · ${monthsWord(monthly.length)}`),
+        `${sheetsWord(DATA.n_sheets)} · ${arCount(weeks, 'أسبوع واحد', 'أسبوعان', 'أسابيع', 'أسبوعًا')} · ${monthsWord(monthly.length)}`),
     kpi('متوسط الإنفاق الشهري', fmt(avgMonth), 'إجمالي الكشوف ÷ عدد الأشهر', 'accent'),
     kpi('أعلى شهر إنفاقًا', fmt(peak.total),
         `${monthLabel(peak.month)} · ${pct(peak.total / total)}٪ من الإجمالي`, 'warm'),
@@ -1254,7 +1378,7 @@ function renderExecSummary() {
   ].join('');
 
   const lines = [];
-  lines.push(`بلغ إجمالي المصروفات <b>${fmt(total)}</b> من <b>${sheetsWord(DATA.n_sheets)}</b> أسبوعيًا تغطي <b>${arCount(weeks, 'أسبوعًا واحدًا', 'أسبوعين', 'أسابيع', 'أسبوعًا')}</b> (${monthsWord(monthly.length)})، بمتوسط شهري <b>${fmt(avgMonth)}</b>.`);
+  lines.push(`بلغ إجمالي المصروفات <b>${fmt(total)}</b> من <b>${sheetsWord(DATA.n_sheets)}</b> تغطي <b>${arCount(weeks, 'أسبوعًا واحدًا', 'أسبوعين', 'أسابيع', 'أسبوعًا')}</b> (${monthsWord(monthly.length)})، بمعدل كشف كل <b>${daysPerSheet.toFixed(1)}</b> يوم، وبمتوسط شهري <b>${fmt(avgMonth)}</b>.`);
   lines.push(`أعلى شهر كان <b>${monthLabel(peak.month)}</b> بـ <b>${fmt(peak.total)}</b> (${pct(peak.total / total)}٪ من الإجمالي)، وأدناه <b>${monthLabel(trough.month)}</b> بـ <b>${fmt(trough.total)}</b> من ${sheetsWord(sheetsIn[trough.month].size)}${trough.month === partialMonth ? ` — وهو شهر <b>لم تكتمل بياناته بعد</b> (آخر كشف في ${arDate(DATA.date_to)})، فلا يُقارَن بشهر كامل` : ''}.`);
   lines.push(`تمثّل تكلفة العمالة <b>${pct(labor / total)}٪</b> من الإنفاق (<b>${fmt(labor)}</b>) — وهي أكبر أوجه الصرف.`);
   lines.push(`تتركّز المصروفات في عدد محدود من المصادر: أعلى خمسة منها تستحوذ على <b>${pct(top5 / total)}٪</b> من الإجمالي، أكبرها <b>${topSource.label}</b> بـ <b>${fmt(topSource.value)}</b>.`);
@@ -1464,16 +1588,20 @@ function renderMonthlyDeltaChart() {
     svg.appendChild(rect);
 
     // القيمة فوق العمود الصاعد وتحت الهابط، فلا تتقاطع مع خط الصفر
+    // آخر عمود: أرقام المحور على الحافة اليمنى، فتُزاح ملصقاته قليلًا
+    const labX = i === n - 1 ? cx - 28 : cx;
     const valLabel = el('text', {
-      x: cx, y: up ? y - 7 : y + h + 15, 'text-anchor': 'middle',
-      style: 'font-size:11px;font-weight:600', fill: cssVar('--ink')
+      x: labX, y: up ? y - 7 : y + h + 15, 'text-anchor': 'middle',
+      style: 'font-size:11px;font-weight:600;paint-order:stroke;stroke:' + cssVar('--surface') + ';stroke-width:3px;stroke-linejoin:round',
+      fill: cssVar('--ink')
     });
     valLabel.textContent = ltr(`${up ? '+' : '−'}${fmt(Math.abs(d.diff))}`);
     svg.appendChild(valLabel);
 
     const pctLabel = el('text', {
-      x: cx, y: up ? y - 21 : y + h + 28, 'text-anchor': 'middle',
-      style: 'font-size:10px', fill: cssVar('--ink-faint')
+      x: labX, y: up ? y - 21 : y + h + 28, 'text-anchor': 'middle',
+      style: 'font-size:10px;paint-order:stroke;stroke:' + cssVar('--surface') + ';stroke-width:3px;stroke-linejoin:round',
+      fill: cssVar('--ink-faint')
     });
     pctLabel.textContent = ltr(`${up ? '+' : '−'}${pct(Math.abs(d.ratio))}٪`);
     svg.appendChild(pctLabel);
@@ -1531,7 +1659,7 @@ function renderBankLineChart() {
     { key: 'exp',    name: 'المصروفات (الكشوف)',   color: cssVar('--series-exp'),    vals: exp.map(d => d.total) },
     { key: 'debit',  name: 'مسحوبات البنك (مدين)', color: cssVar('--series-debit'),  vals: months.map(m => BANK[m] ? BANK[m].debit : null) },
     { key: 'credit', name: 'إيداعات البنك (دائن)', color: cssVar('--series-credit'), vals: months.map(m => BANK[m] ? BANK[m].credit : null) },
-    { key: 'balance', name: 'رصيد نهاية الشهر', color: cssVar('--series-balance'), dashed: true, vals: months.map(m => BANK[m] ? BANK[m].balance : null) },
+    // الرصيد ليس سلسلة هنا — انظر التعليق عند وسيلة الإيضاح في الـ HTML
   ];
 
   const svg = document.getElementById('bank-line-svg');
@@ -1612,6 +1740,7 @@ renderBankPeriod();
 renderMonthlyBarChart();
 renderMonthlyDeltaChart();
 renderBankLineChart();
+renderBalanceRangeChart();
 renderBalanceChart();
 renderRepeatChart();
 renderAtomicTable();
@@ -1626,6 +1755,7 @@ function refreshAll() {
   renderMonthlyBarChart();
   renderMonthlyDeltaChart();
   renderBankLineChart();
+  renderBalanceRangeChart();
   renderBalanceChart();
   renderRepeatChart();
   renderAtomicTable();
