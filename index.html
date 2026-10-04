@@ -34,6 +34,14 @@
   --series-credit: #1baf7a;
   --series-balance: #4a3aa7;
 
+  /* ألوان الأعمدة الشهرية: لون واحد لكل الأشهر (الشهر نفسه على المحور، فلا
+     حاجة للونٍ يميّزه)، ودرجة أغمق للشهر الأعلى وحده. الارتفاع/الانخفاض في
+     رسم التغيّر الشهري زوجٌ تم التحقق منه لعمى الألوان وللطباعة. */
+  --chart-bar: #1f6fa8;
+  --chart-bar-peak: #13456b;
+  --chart-up: #b06a2e;
+  --chart-down: #1f6fa8;
+
   --tooltip-bg: #1c2430;
   --tooltip-ink: #f5f1e8;
 
@@ -82,6 +90,11 @@
   --series-debit: #d95926;
   --series-credit: #199e70;
   --series-balance: #9085e9;
+  /* خطوات الوضع الداكن مُختارة ومُتحقَّق منها على سطحه، لا انعكاسًا لألوان النهار */
+  --chart-bar: #4e9bdc;
+  --chart-bar-peak: #8fc5f0;
+  --chart-up: #c57f3e;
+  --chart-down: #4e9bdc;
   --bg: #14181e;
   --surface: #1b2129;
   --surface-2: #202832;
@@ -164,6 +177,31 @@ h1 {
 .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .panel-head h2 { font-size: 16px; font-weight: 700; margin: 0; }
 .panel-head .hint { font-size: 12px; color: var(--ink-faint); }
+
+/* ── الملخص التنفيذي ─────────────────────────────────────────────────────── */
+.exec { border-top: 3px solid var(--steel-500); }
+.exec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(188px, 1fr)); gap: 12px; }
+/* سبع بطاقات: صفّان ٤ + ٣ أفضل من ٥ + ٢ */
+@media (min-width: 900px) { .exec-grid { grid-template-columns: repeat(4, 1fr); } }
+.exec-kpi { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 10px; padding: 14px 16px; }
+.exec-kpi .k { font-size: 11.5px; color: var(--ink-faint); font-weight: 600; margin-bottom: 6px; line-height: 1.5; }
+.exec-kpi .v { font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.15; }
+.exec-kpi .v.sm { font-size: 16px; line-height: 1.35; }
+.exec-kpi .s { font-size: 11.5px; color: var(--ink-muted); margin-top: 5px; line-height: 1.6; }
+.exec-kpi.accent .v { color: var(--steel-500); }
+.exec-kpi.warm .v { color: var(--amber-500); }
+.exec-findings { margin-top: 18px; border-top: 1px solid var(--border-soft); padding-top: 14px; }
+.exec-findings h3 { font-size: 12.5px; font-weight: 700; color: var(--ink-faint); margin: 0 0 10px; letter-spacing: .3px; }
+.exec-findings ul { margin: 0; padding-inline-start: 20px; }
+.exec-findings li { font-size: 13.5px; line-height: 2; color: var(--ink); }
+.exec-findings li b { font-weight: 700; color: var(--steel-700); }
+.head-period { font-size: 12.5px; font-weight: 600; color: var(--ink-faint); margin-inline-start: 8px; }
+
+/* الطباعة: الملخص صفحة قائمة بذاتها، ولا يُقسَّم أي قسم بين صفحتين */
+@media print {
+  #exec-summary { break-after: page; page-break-after: always; }
+  .panel { break-inside: avoid; page-break-inside: avoid; }
+}
 
 #tmap-holder { position: relative; width: 100%; }
 #tmap-holder svg { display: block; width: 100%; height: auto; }
@@ -290,6 +328,20 @@ tr.raw-row .month-dot-cell { width: 26px; padding-inline-end: 0; }
     </div>
   </header>
 
+  <!-- الملخص التنفيذي: كل أرقامه وجُمله تُحسب وقت التشغيل من ROWS/DATA/REGULAR،
+       فإعادة بناء الصفحة من تصدير جديد تُحدّثه تلقائيًا — لا رقم مكتوب يدويًا. -->
+  <section class="panel exec" id="exec-summary">
+    <div class="panel-head">
+      <h2>ملخص تنفيذي</h2>
+      <div class="hint" id="exec-period">—</div>
+    </div>
+    <div class="exec-grid" id="exec-grid"></div>
+    <div class="exec-findings">
+      <h3>أبرز المؤشرات</h3>
+      <ul id="exec-findings"></ul>
+    </div>
+  </section>
+
   <section class="panel">
     <div class="panel-head">
       <h2>إجمالي المصروفات حسب الشهر</h2>
@@ -300,15 +352,15 @@ tr.raw-row .month-dot-cell { width: 26px; padding-inline-end: 0; }
 
   <section class="panel" style="margin-top: 22px;">
     <div class="panel-head">
-      <h2>النمو التراكمي للمصروفات</h2>
-      <div class="hint">كل نقطة = إجمالي المصروفات منذ بداية السنة حتى نهاية ذلك الشهر</div>
+      <h2>التغيّر الشهري في المصروفات</h2>
+      <div class="hint">الفرق عن الشهر السابق · عمود لأعلى = ارتفاع، لأسفل = انخفاض · الشهر المظلّل (*) بياناته غير مكتملة</div>
     </div>
-    <div id="month-line-holder"><svg id="month-line-svg" viewBox="0 0 1000 340" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div id="month-delta-holder"><svg id="month-delta-svg" viewBox="0 0 1000 340" preserveAspectRatio="xMidYMid meet"></svg></div>
   </section>
 
   <section class="panel" style="margin-top: 22px;">
     <div class="panel-head">
-      <h2>المصروفات مقابل حركة البنك</h2>
+      <h2>المصروفات مقابل حركة البنك <span class="head-period" id="bank-period"></span></h2>
       <div class="hint">مرّر المؤشر على أي شهر لمقارنة القيم الأربع · الخط المتقطع رصيد وليس حركة</div>
     </div>
     <div class="series-legend">
@@ -441,29 +493,9 @@ tr.raw-row .month-dot-cell { width: 26px; padding-inline-end: 0; }
     <div class="chart-note" id="atomic-note"></div>
   </section>
 
-  <section class="panel" style="margin-top: 22px;">
-    <div class="panel-head">
-      <h2>البيانات الأصلية، بندًا بندًا</h2>
-      <div class="hint">كل الـ<span class="num" id="raw-count">—</span> بندًا كما وردت في ملف التصدير، مرتّبة زمنيًا ومقسّمة حسب شهر الكشف</div>
-    </div>
-    <div class="month-chip-row" id="month-chips"></div>
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th style="width:26px"></th>
-            <th>الكشف</th>
-            <th>التاريخ</th>
-            <th>البند</th>
-            <th>المصدر</th>
-            <th class="num-col">المبلغ</th>
-            <th>الحالة</th>
-          </tr>
-        </thead>
-        <tbody id="raw-tbl-body"></tbody>
-      </table>
-    </div>
-  </section>
+  <!-- أُزيل جدول "البيانات الأصلية، بندًا بندًا": مئات الأسطر لا تُقرأ في تقرير
+       إداري وتضاعف عدد صفحات الـ PDF. البيانات نفسها تبقى في ROWS ويمكن تصديرها
+       من النظام عند الحاجة، وكل الأقسام أعلاه محسوبة منها. -->
 
   <footer class="note">
     محسوبة مباشرة من ملف تصدير المصروفات (٢٢٤ بندًا نشطًا). التجميع بحسب مجموعة المصادر بالضبط لكل بند — لا تُنسب المبالغ المركّبة جزئيًا لكل مصدر على حدة.
@@ -1084,47 +1116,7 @@ function monthColor(idx, total, dark) {
   };
 }
 
-function renderRawTable() {
-  const dark = isDarkMode();
-  const colors = {};
-  MONTHS.forEach((m, i) => { colors[m] = monthColor(i, MONTHS.length, dark); });
-
-  document.getElementById('raw-count').textContent = ROWS.length.toLocaleString('en-US');
-
-  const chips = document.getElementById('month-chips');
-  chips.innerHTML = MONTHS.map(m => {
-    const [y, mm] = m.split('-');
-    return `<div class="month-chip"><span class="dot" style="background:${colors[m].dot}"></span>${MONTH_NAMES[Number(mm) - 1]} ${y}</div>`;
-  }).join('');
-
-  const tbody = document.getElementById('raw-tbl-body');
-  tbody.innerHTML = '';
-  let curMonth = null;
-  ROWS.forEach(r => {
-    if (r.month !== curMonth) {
-      curMonth = r.month;
-      const monthRows = ROWS.filter(x => x.month === curMonth);
-      const subtotal = monthRows.reduce((s, x) => s + x.amount, 0);
-      const [y, mm] = curMonth.split('-');
-      const tr = document.createElement('tr');
-      tr.className = 'month-divider';
-      tr.innerHTML = `<td colspan="7"><span class="dot" style="background:${colors[curMonth].dot};display:inline-block;margin-inline-end:8px;vertical-align:middle"></span>${MONTH_NAMES[Number(mm) - 1]} ${y} — ${monthRows.length} بندًا · <span class="num">${fmt(subtotal)}</span></td>`;
-      tbody.appendChild(tr);
-    }
-    const tr = document.createElement('tr');
-    tr.className = 'raw-row';
-    tr.style.background = colors[r.month].bg;
-    tr.innerHTML = `
-      <td class="month-dot-cell"><span class="dot" style="background:${colors[r.month].dot}"></span></td>
-      <td class="num">#${r.sheet}</td>
-      <td class="num">${arDate(r.date)}</td>
-      <td>${r.label}</td>
-      <td class="src-cell">${r.source}</td>
-      <td class="num-col num">${fmt(r.amount)}</td>
-      <td>${r.status}</td>`;
-    tbody.appendChild(tr);
-  });
-}
+// أُزيلت renderRawTable() مع القسم الذي كانت ترسمه (البيانات بندًا بندًا).
 
 // ── Monthly totals: bar chart, cumulative line, summary table ──────────────
 function computeMonthlyTotals() {
@@ -1143,6 +1135,142 @@ function monthLabel(m) {
 function niceCeil(v) {
   const mag = Math.pow(10, Math.floor(Math.log10(v)) - 1);
   return Math.ceil(v / (mag * 5)) * (mag * 5);
+}
+
+// فترة كشوف البنك في عنوان رسم "المصروفات مقابل حركة البنك" — فهي أقصر من فترة
+// المصروفات، وبدونها يُقرأ الشهر الخالي من خطوط البنك كأنه شهر بلا حركة.
+// التواريخ الدقيقة من BALANCE (نقطة لكل معاملة)، وإلا فأشهر BANK.
+function renderBankPeriod() {
+  const elp = document.getElementById('bank-period');
+  if (!elp) return;
+  let text = '';
+  if (typeof BALANCE !== 'undefined' && Array.isArray(BALANCE) && BALANCE.length) {
+    text = `كشوف البنك: ${arDate(BALANCE[0].d)} — ${arDate(BALANCE[BALANCE.length - 1].d)}`;
+  } else if (typeof BANK !== 'undefined' && BANK) {
+    const ms = Object.keys(BANK).sort();
+    if (ms.length) {
+      const yr = m => m.split('-')[0];
+      text = `كشوف البنك: ${monthLabel(ms[0])} ${yr(ms[0])} — ${monthLabel(ms[ms.length - 1])} ${yr(ms[ms.length - 1])}`;
+    }
+  }
+  elp.textContent = text ? `· ${text}` : '';
+}
+
+// الشهر الأخير ناقص إذا كان آخر كشف قبل نهايته. تعريف واحد يستخدمه الملخص
+// والرسوم معًا، حتى لا يختلف ما يقوله النص عمّا تظهره الأعمدة.
+// رقم موجَّه من اليسار إلى اليمين داخل صفحة عربية: بدون العزل تنتقل علامة
+// + / − إلى آخر الرقم فيُقرأ "39,684+".
+const ltr = s => '⁦' + s + '⁩';
+
+function partialMonthKey(monthly) {
+  if (!monthly.length) return null;
+  const last = monthly[monthly.length - 1].month;
+  const [y, m] = last.split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const lastDay = Number(DATA.date_to.split('-')[2]);
+  return (DATA.date_to.slice(0, 7) === last && lastDay < daysInMonth) ? last : null;
+}
+
+// ── الملخص التنفيذي ────────────────────────────────────────────────────────
+// يقرأ نفس المصادر التي تقرأها بقية الصفحة (ROWS / DATA / REGULAR) ويبني
+// البطاقات والجُمل منها، حتى لا يتعارض رقم في الملخص مع رقم في رسم أدناه.
+const LABOR_LABELS_EXEC = ['قبض العمال', 'قبض موظفين', 'مصروف العمال', 'قبض العيد'];
+const AGGREGATED_LABEL = 'مصروفات مجمعة';
+
+// تمييز العدد في العربية: مفرد/مثنى/جمع قلة/تمييز مفرد منصوب — "5 كشف" ركيكة
+// في تقرير يُرفع للإدارة.
+function arCount(n, one, two, few, many) {
+  if (n === 1) return one;
+  if (n === 2) return two;
+  if (n >= 3 && n <= 10) return `${n} ${few}`;
+  return `${n} ${many}`;
+}
+const sheetsWord = n => arCount(n, 'كشف واحد', 'كشفان', 'كشوف', 'كشفًا');
+const monthsWord = n => arCount(n, 'شهر واحد', 'شهران', 'أشهر', 'شهرًا');
+
+function renderExecSummary() {
+  const grid = document.getElementById('exec-grid');
+  const list = document.getElementById('exec-findings');
+  if (!grid || !list) return;
+
+  const monthly = computeMonthlyTotals();
+  const total = DATA.grand_total;
+
+  // عدد الكشوف في كل شهر: شهر بكشف واحد لا يُقارَن بشهر مكتمل
+  const sheetsIn = {};
+  ROWS.forEach(r => (sheetsIn[r.month] = sheetsIn[r.month] || new Set()).add(r.sheet));
+
+  const byTotal = [...monthly].sort((a, b) => b.total - a.total);
+  const peak = byTotal[0], trough = byTotal[byTotal.length - 1];
+  const avgMonth = total / (monthly.length || 1);
+
+  // المصادر: المجمَّعة ليست مصدرًا واحدًا بل بقية صغيرة، فتُستبعد من "أكبر مصدر"
+  const sources = DATA.slices.filter(s => s.label !== AGGREGATED_LABEL)
+                             .sort((a, b) => b.value - a.value);
+  const topSource = sources[0] || { label: '—', value: 0 };
+  const top5 = sources.slice(0, 5).reduce((s, x) => s + x.value, 0);
+  const labor = DATA.slices.filter(s => LABOR_LABELS_EXEC.includes(s.label))
+                           .reduce((s, x) => s + x.value, 0);
+
+  const regular = (typeof REGULAR !== 'undefined' && Array.isArray(REGULAR)) ? REGULAR : [];
+  const regularTotal = regular.reduce((s, r) => s + (r.amount || 0), 0);
+  const regularName = regular.length ? (regular[0].name_ar || regular[0].name) : '';
+
+  // تُذكر هذه الحقيقة مع أي رقم يخصّ الشهر الناقص، وإلا قُرئ انخفاضه كتراجع في
+  // الإنفاق لا كبيانات لم تكتمل بعد.
+  const partialMonth = partialMonthKey(monthly);
+  const partialNote = m => (m === partialMonth)
+    ? ` · بيانات الشهر غير مكتملة (حتى ${arDate(DATA.date_to)})` : '';
+
+  // الكشوف أسبوعية، فعدد الأسابيع هو المدى الزمني نفسه مقيسًا بالأسابيع
+  const weeks = Math.round(
+    (new Date(DATA.date_to) - new Date(DATA.date_from)) / (7 * 24 * 3600 * 1000)) + 1;
+
+  const kpi = (k, v, s, cls = '', small = false) => `
+    <div class="exec-kpi ${cls}">
+      <div class="k">${k}</div>
+      <div class="v${small ? ' sm' : ''}">${v}</div>
+      ${s ? `<div class="s">${s}</div>` : ''}
+    </div>`;
+
+  document.getElementById('exec-period').textContent =
+    `${arDate(DATA.date_from)} — ${arDate(DATA.date_to)} · ${sheetsWord(DATA.n_sheets)} · ${arCount(DATA.n_rows,'بند واحد','بندان','بنود','بندًا')}`;
+
+  grid.innerHTML = [
+    kpi('إجمالي المصروفات (الكشوف)', fmt(total),
+        `${sheetsWord(DATA.n_sheets)} أسبوعيًا · ${arCount(weeks, 'أسبوع واحد', 'أسبوعان', 'أسابيع', 'أسبوعًا')} · ${monthsWord(monthly.length)}`),
+    kpi('متوسط الإنفاق الشهري', fmt(avgMonth), 'إجمالي الكشوف ÷ عدد الأشهر', 'accent'),
+    kpi('أعلى شهر إنفاقًا', fmt(peak.total),
+        `${monthLabel(peak.month)} · ${pct(peak.total / total)}٪ من الإجمالي`, 'warm'),
+    kpi('أدنى شهر إنفاقًا', fmt(trough.total),
+        `${monthLabel(trough.month)} · ${sheetsWord(sheetsIn[trough.month].size)}${partialNote(trough.month)}`),
+    kpi('تكلفة العمالة', fmt(labor), `${pct(labor / total)}٪ من إجمالي المصروفات`, 'warm'),
+    kpi('أكبر مصدر صرف', topSource.label,
+        `${fmt(topSource.value)} · ${pct(topSource.value / total)}٪ من الإجمالي`, 'accent', true),
+    regularTotal
+      ? kpi('إجمالي شامل', fmt(total + regularTotal),
+            `يشمل ${fmt(regularTotal)} مصروفات المنزل الثابتة${regularName ? ` (${regularName})` : ''} — خارج الكشوف`)
+      : '',
+  ].join('');
+
+  const lines = [];
+  lines.push(`بلغ إجمالي المصروفات <b>${fmt(total)}</b> من <b>${sheetsWord(DATA.n_sheets)}</b> أسبوعيًا تغطي <b>${arCount(weeks, 'أسبوعًا واحدًا', 'أسبوعين', 'أسابيع', 'أسبوعًا')}</b> (${monthsWord(monthly.length)})، بمتوسط شهري <b>${fmt(avgMonth)}</b>.`);
+  lines.push(`أعلى شهر كان <b>${monthLabel(peak.month)}</b> بـ <b>${fmt(peak.total)}</b> (${pct(peak.total / total)}٪ من الإجمالي)، وأدناه <b>${monthLabel(trough.month)}</b> بـ <b>${fmt(trough.total)}</b> من ${sheetsWord(sheetsIn[trough.month].size)}${trough.month === partialMonth ? ` — وهو شهر <b>لم تكتمل بياناته بعد</b> (آخر كشف في ${arDate(DATA.date_to)})، فلا يُقارَن بشهر كامل` : ''}.`);
+  lines.push(`تمثّل تكلفة العمالة <b>${pct(labor / total)}٪</b> من الإنفاق (<b>${fmt(labor)}</b>) — وهي أكبر أوجه الصرف.`);
+  lines.push(`تتركّز المصروفات في عدد محدود من المصادر: أعلى خمسة منها تستحوذ على <b>${pct(top5 / total)}٪</b> من الإجمالي، أكبرها <b>${topSource.label}</b> بـ <b>${fmt(topSource.value)}</b>.`);
+
+  // آخر شهرين: يُذكر عدد الكشوف لأن الشهر الأخير قد يكون ناقصًا
+  if (monthly.length >= 2) {
+    const last = monthly[monthly.length - 1], prev = monthly[monthly.length - 2];
+    const delta = prev.total ? (last.total - prev.total) / prev.total : 0;
+    const dir = last.total >= prev.total ? 'ارتفاعًا' : 'انخفاضًا';
+    lines.push(`سجّل <b>${monthLabel(last.month)}</b> (${sheetsWord(sheetsIn[last.month].size)}) ${dir} بنسبة <b>${pct(Math.abs(delta))}٪</b> عن <b>${monthLabel(prev.month)}</b> (${sheetsWord(sheetsIn[prev.month].size)}) — ${last.month === partialMonth ? 'والشهر لم يكتمل بعد، فالفارق ناتج عن نقص البيانات لا عن تراجع الإنفاق' : 'تُقرأ النسبة بحذر عند اختلاف عدد الكشوف بين الشهرين'}.`);
+  }
+  if (regularTotal) {
+    lines.push(`إضافة إلى ما سبق، <b>${fmt(regularTotal)}</b> <b>مصروفات المنزل</b> الثابتة شهريًا${regularName ? ` (${regularName})` : ''} تُسحب من البنك مباشرة ولا تظهر في الكشوف، ليصبح الإجمالي الشامل <b>${fmt(total + regularTotal)}</b>.`);
+  }
+
+  list.innerHTML = lines.map(t => `<li>${t}</li>`).join('');
 }
 
 function renderMonthlyBarChart() {
@@ -1172,20 +1300,74 @@ function renderMonthlyBarChart() {
     svg.appendChild(label);
   }
 
+  // المتوسط الشهري كخط مرجعي: بدونه يُقرأ كل عمود وحده، وبه يُقرأ كل شهر
+  // فوق المعدّل أو تحته.
+  const avg = data.reduce((s, d) => s + d.total, 0) / (data.length || 1);
+  const avgY = mTop + plotH - (avg / niceMax) * plotH;
+  svg.appendChild(el('line', {
+    x1: mLeft, x2: VW - mRight, y1: avgY, y2: avgY,
+    stroke: cssVar('--ink-muted'), 'stroke-width': 1.5, 'stroke-dasharray': '6 5'
+  }));
+  // وسيلة إيضاح أعلى الرسم: النص على الخط نفسه يتقاطع مع الأعمدة
+  const avgText = `المتوسط الشهري ${fmt(avg)}`;
+  const avgLab = el('text', {
+    x: VW - mRight, y: 13, 'text-anchor': 'start', style: 'font-size:10.5px;font-weight:600',
+    fill: cssVar('--ink-muted')
+  });
+  avgLab.textContent = avgText;
+  svg.appendChild(avgLab);
+  const avgW = textWidth(avgText, '600 10.5px ' + getComputedStyle(document.body).fontFamily);
+  svg.appendChild(el('line', {
+    x1: VW - mRight - avgW - 8, x2: VW - mRight - avgW - 32, y1: 9, y2: 9,
+    stroke: cssVar('--ink-muted'), 'stroke-width': 1.5, 'stroke-dasharray': '6 5'
+  }));
+
+  // تظليل مائل للشهر الناقص — علامة تبقى مقروءة في الطباعة بالأبيض والأسود
+  // وعند عمى الألوان، على عكس لون مختلف وحده.
+  const partial = partialMonthKey(data);
+  const defs = el('defs', {});
+  const pat = el('pattern', { id: 'hatch-partial', width: 7, height: 7, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' });
+  pat.appendChild(el('rect', { width: 7, height: 7, fill: cssVar('--surface') }));
+  pat.appendChild(el('rect', { width: 3, height: 7, fill: cssVar('--chart-bar'), opacity: .55 }));
+  defs.appendChild(pat);
+  svg.appendChild(defs);
+
+  const peakTotal = Math.max(...data.map(d => d.total));
+
   data.forEach((d, i) => {
     const cx = mLeft + i * slot + slot / 2;
     const x = cx - barW / 2;
     const h = (d.total / niceMax) * plotH;
     const y = mTop + plotH - h;
-    const color = monthColor(i, n, dark).dot;
+    const isPartial = d.month === partial;
+    const isPeak = d.total === peakTotal && !isPartial;
+    const color = isPartial ? 'url(#hatch-partial)'
+                : isPeak ? cssVar('--chart-bar-peak')
+                : cssVar('--chart-bar');
     const rect = el('rect', { x, y, width: barW, height: h, fill: color, rx: 5, class: 'month-bar-rect' });
+    if (isPartial) {
+      rect.setAttribute('stroke', cssVar('--chart-bar'));
+      rect.setAttribute('stroke-width', '1.5');
+      rect.setAttribute('stroke-dasharray', '4 3');
+    }
+    if (isPeak || isPartial) {
+      const tag = el('text', {
+        x: i === n - 1 ? cx - 30 : cx, y: y - 24, 'text-anchor': 'middle',
+        style: 'font-size:10.5px;font-weight:700;paint-order:stroke;stroke:' + cssVar('--surface') + ';stroke-width:3px;stroke-linejoin:round',
+        fill: isPeak ? cssVar('--chart-bar-peak') : cssVar('--ink-muted')
+      });
+      tag.textContent = isPeak ? 'أعلى شهر' : 'غير مكتمل';
+      svg.appendChild(tag);
+    }
     rect.addEventListener('mouseenter', e => showTooltipHTML(e, monthTooltipHTML(d)));
     rect.addEventListener('mousemove', e => showTooltipHTML(e, monthTooltipHTML(d)));
     rect.addEventListener('mouseleave', hideTooltip);
     svg.appendChild(rect);
 
     const valLabel = el('text', {
-      x: cx, y: y - 8, 'text-anchor': 'middle', class: 'month-axis-value', style: 'font-size:11px', fill: inkColor
+      x: cx, y: y - 8, 'text-anchor': 'middle', class: 'month-axis-value',
+      style: 'font-size:11px;paint-order:stroke;stroke:' + cssVar('--surface') + ';stroke-width:3px;stroke-linejoin:round',
+      fill: inkColor
     });
     valLabel.textContent = fmt(d.total);
     svg.appendChild(valLabel);
@@ -1205,59 +1387,102 @@ function monthTooltipHTML(d) {
     <div class="tt-row"><span>نسبة من إجمالي السنة</span><span class="num">${pct(d.total / DATA.grand_total)}%</span></div>`;
 }
 
-function renderMonthlyLineChart() {
+// التغيّر الشهري بدل المنحنى التراكمي: المنحنى التراكمي يصعد دائمًا بحكم
+// تعريفه، فلا يحمل خبرًا؛ أما الفرق عن الشهر السابق فيُظهر الاتجاه مباشرة.
+function renderMonthlyDeltaChart() {
   const data = computeMonthlyTotals();
-  const svg = document.getElementById('month-line-svg');
+  const svg = document.getElementById('month-delta-svg');
+  if (!svg) return;
   svg.innerHTML = '';
+  const partial = partialMonthKey(data);
+
+  // أول شهر لا سابق له، فلا تغيّر يُحسب له
+  const deltas = data.slice(1).map((d, i) => {
+    const prev = data[i];
+    return { month: d.month, prevMonth: prev.month, total: d.total, prevTotal: prev.total,
+             diff: d.total - prev.total, ratio: prev.total ? (d.total - prev.total) / prev.total : 0,
+             partial: d.month === partial };
+  });
+  if (!deltas.length) return;
+
   const VW = 1000, VH = 340;
-  const mTop = 24, mBottom = 34, mLeft = 12, mRight = 12;
+  const mTop = 30, mBottom = 40, mLeft = 12, mRight = 12;
   const plotW = VW - mLeft - mRight, plotH = VH - mTop - mBottom;
-  const maxVal = data[data.length - 1].cumulative;
-  const niceMax = niceCeil(maxVal);
-  const n = data.length;
-  const gridColor = cssVar('--border-soft');
-  const faintColor = cssVar('--ink-faint');
+  const maxAbs = niceCeil(Math.max(...deltas.map(d => Math.abs(d.diff))) || 1);
+  const n = deltas.length;
+  const slot = plotW / n;
+  const barW = slot * 0.5;
+  const zeroY = mTop + plotH / 2;
+  const scale = v => (v / maxAbs) * (plotH / 2);
 
-  const steps = 5;
-  for (let i = 0; i <= steps; i++) {
-    const val = (niceMax / steps) * i;
-    const y = mTop + plotH - (val / niceMax) * plotH;
-    svg.appendChild(el('line', { x1: mLeft, x2: VW - mRight, y1: y, y2: y, stroke: gridColor, 'stroke-width': 1 }));
-    const label = el('text', { x: VW - mRight, y: y - 4, 'text-anchor': 'end', class: 'month-axis-value', style: 'font-size:10px', fill: faintColor });
-    label.textContent = fmt(val);
-    svg.appendChild(label);
-  }
+  const upColor = cssVar('--chart-up'), downColor = cssVar('--chart-down');
 
-  const pts = data.map((d, i) => ({
-    x: mLeft + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW),
-    y: mTop + plotH - (d.cumulative / niceMax) * plotH,
-    d
-  }));
+  // شبكة أفقية: ±النصف و±الكامل حول الصفر
+  [-1, -0.5, 0.5, 1].forEach(f => {
+    const y = zeroY - scale(maxAbs * f);
+    svg.appendChild(el('line', { x1: mLeft, x2: VW - mRight, y1: y, y2: y,
+      stroke: cssVar('--border-soft'), 'stroke-width': 1 }));
+    const lab = el('text', { x: VW - mRight, y: y - 4, 'text-anchor': 'start',
+      style: 'font-size:10px', fill: cssVar('--ink-faint') });
+    lab.textContent = ltr((f > 0 ? '+' : '−') + fmt(Math.abs(maxAbs * f)));
+    svg.appendChild(lab);
+  });
+  svg.appendChild(el('line', { x1: mLeft, x2: VW - mRight, y1: zeroY, y2: zeroY,
+    stroke: cssVar('--ink-faint'), 'stroke-width': 1.5 }));
 
-  const linePath = 'M ' + pts.map(p => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' L ');
-  svg.appendChild(el('path', { d: linePath, class: 'month-line-path' }));
+  const hatch = el('defs', {});
+  const pat = el('pattern', { id: 'hatch-delta', width: 7, height: 7,
+    patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' });
+  pat.appendChild(el('rect', { width: 7, height: 7, fill: cssVar('--surface') }));
+  pat.appendChild(el('rect', { width: 3, height: 7, fill: downColor, opacity: .55 }));
+  hatch.appendChild(pat);
+  svg.appendChild(hatch);
 
-  const areaPath = linePath + ` L ${pts[pts.length - 1].x.toFixed(1)} ${mTop + plotH} L ${pts[0].x.toFixed(1)} ${mTop + plotH} Z`;
-  const areaEl = el('path', { d: areaPath, class: 'month-line-area' });
-  svg.insertBefore(areaEl, svg.firstChild);
-
-  pts.forEach(p => {
-    const dot = el('circle', { cx: p.x, cy: p.y, r: 5, class: 'month-line-dot' });
-    dot.addEventListener('mouseenter', e => showTooltipHTML(e, monthTooltipHTML(p.d)));
-    dot.addEventListener('mousemove', e => showTooltipHTML(e, monthTooltipHTML(p.d)));
-    dot.addEventListener('mouseleave', hideTooltip);
-    svg.appendChild(dot);
-
-    const valLabel = el('text', {
-      x: p.x, y: p.y - 12, 'text-anchor': 'middle', class: 'month-axis-value', style: 'font-size:11px', fill: cssVar('--ink')
+  deltas.forEach((d, i) => {
+    const cx = mLeft + i * slot + slot / 2;
+    const up = d.diff >= 0;
+    const h = Math.abs(scale(d.diff));
+    const y = up ? zeroY - h : zeroY;
+    const rect = el('rect', {
+      x: cx - barW / 2, y, width: barW, height: Math.max(h, 1), rx: 4,
+      fill: d.partial ? 'url(#hatch-delta)' : (up ? upColor : downColor),
+      class: 'month-bar-rect'
     });
-    valLabel.textContent = fmt(p.d.cumulative);
+    if (d.partial) {
+      rect.setAttribute('stroke', downColor);
+      rect.setAttribute('stroke-width', '1.5');
+      rect.setAttribute('stroke-dasharray', '4 3');
+    }
+    const tip = () => `<div class="tt-title">${monthLabel(d.month)} مقابل ${monthLabel(d.prevMonth)}</div>
+      <div class="tt-row"><span>${monthLabel(d.month)}</span><span class="num">${fmt(d.total)}</span></div>
+      <div class="tt-row"><span>${monthLabel(d.prevMonth)}</span><span class="num">${fmt(d.prevTotal)}</span></div>
+      <div class="tt-row"><span>الفرق</span><span class="num">${ltr((up ? '+' : '−') + fmt(Math.abs(d.diff)))} (${pct(Math.abs(d.ratio))}٪)</span></div>
+      ${d.partial ? '<div class="tt-row"><span>تنبيه</span><span>بيانات الشهر غير مكتملة</span></div>' : ''}`;
+    rect.addEventListener('mouseenter', e => showTooltipHTML(e, tip()));
+    rect.addEventListener('mousemove', e => showTooltipHTML(e, tip()));
+    rect.addEventListener('mouseleave', hideTooltip);
+    svg.appendChild(rect);
+
+    // القيمة فوق العمود الصاعد وتحت الهابط، فلا تتقاطع مع خط الصفر
+    const valLabel = el('text', {
+      x: cx, y: up ? y - 7 : y + h + 15, 'text-anchor': 'middle',
+      style: 'font-size:11px;font-weight:600', fill: cssVar('--ink')
+    });
+    valLabel.textContent = ltr(`${up ? '+' : '−'}${fmt(Math.abs(d.diff))}`);
     svg.appendChild(valLabel);
 
-    const nameLabel = el('text', {
-      x: p.x, y: VH - mBottom + 20, 'text-anchor': 'middle', class: 'month-axis-label', style: 'font-size:12px', fill: cssVar('--ink-muted')
+    const pctLabel = el('text', {
+      x: cx, y: up ? y - 21 : y + h + 28, 'text-anchor': 'middle',
+      style: 'font-size:10px', fill: cssVar('--ink-faint')
     });
-    nameLabel.textContent = monthLabel(p.d.month);
+    pctLabel.textContent = ltr(`${up ? '+' : '−'}${pct(Math.abs(d.ratio))}٪`);
+    svg.appendChild(pctLabel);
+
+    const nameLabel = el('text', {
+      x: cx, y: VH - 10, 'text-anchor': 'middle', class: 'month-axis-label',
+      style: 'font-size:12px', fill: cssVar('--ink-muted')
+    });
+    nameLabel.textContent = monthLabel(d.month) + (d.partial ? ' *' : '');
     svg.appendChild(nameLabel);
   });
 }
@@ -1382,9 +1607,10 @@ function renderBankLineChart() {
 }
 
 render();
-renderRawTable();
+renderExecSummary();
+renderBankPeriod();
 renderMonthlyBarChart();
-renderMonthlyLineChart();
+renderMonthlyDeltaChart();
 renderBankLineChart();
 renderBalanceChart();
 renderRepeatChart();
@@ -1395,9 +1621,10 @@ const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 function refreshAll() {
   try {
   render();
-  renderRawTable();
+  renderExecSummary();
+  renderBankPeriod();
   renderMonthlyBarChart();
-  renderMonthlyLineChart();
+  renderMonthlyDeltaChart();
   renderBankLineChart();
   renderBalanceChart();
   renderRepeatChart();
