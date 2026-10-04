@@ -334,7 +334,19 @@ tr.raw-row .month-dot-cell { width: 26px; padding-inline-end: 0; }
     <div class="chart-note" id="balance-note"></div>
   </section>
 
-  <section class="table-panel" style="margin-top: 22px;">
+  <section class="panel" style="margin-top: 22px;">
+    <div class="panel-head">
+      <h2>المصروفات شهرًا بشهر</h2>
+      <div class="hint" id="months-scope">—</div>
+    </div>
+    <div class="chart-note" style="margin-top:0">
+      «المبلغ المتراكم» = مجموع المصروفات منذ أول كشف حتى نهاية ذلك الشهر.
+      والنسبة محسوبة على إجمالي <b>الفترة المعروضة</b> لا على سنة كاملة — فالكشوف تنتهي في سبتمبر،
+      ولذلك يظهر سبتمبر بنسبة صغيرة (كشف واحد)، وستتغيّر النسب كلما أُضيفت كشوف جديدة.
+    </div>
+  </section>
+
+  <section class="table-panel">
     <div class="table-scroll">
       <table>
         <thead>
@@ -343,7 +355,7 @@ tr.raw-row .month-dot-cell { width: 26px; padding-inline-end: 0; }
             <th>الشهر</th>
             <th class="num-col">المبلغ الشهري</th>
             <th class="num-col">المبلغ المتراكم</th>
-            <th style="width:160px">نسبة من إجمالي السنة</th>
+            <th style="width:160px">نسبة من إجمالي الفترة</th>
           </tr>
         </thead>
         <tbody id="month-tbl-body"></tbody>
@@ -364,6 +376,17 @@ tr.raw-row .month-dot-cell { width: 26px; padding-inline-end: 0; }
     </div>
   </section>
 
+  <section class="panel" style="margin-top: 22px;">
+    <div class="panel-head">
+      <h2>المصروفات حسب المصدر — المبالغ</h2>
+      <div class="hint" id="amounts-scope">—</div>
+    </div>
+    <div class="chart-note" style="margin-top:0">
+      المصدر هنا كما كُتب في الكشف بالضبط: البند المسجَّل على أكثر من مصدر يظهر بتركيبته كاملة
+      (مثل «استهلاكات، محروقات») ولا يُقسَّم. لعدد مرات تكرار كل مصدر على حدة، انظر الجدول التالي.
+    </div>
+  </section>
+
   <section class="table-panel">
     <div class="table-scroll">
       <table>
@@ -373,13 +396,49 @@ tr.raw-row .month-dot-cell { width: 26px; padding-inline-end: 0; }
             <th>المصدر</th>
             <th>النوع</th>
             <th class="num-col">المبلغ</th>
-            <th class="num-col">عدد البنود</th>
             <th style="width:160px">الحصة من الإجمالي</th>
           </tr>
         </thead>
         <tbody id="tbl-body"></tbody>
       </table>
     </div>
+  </section>
+
+  <!-- نفس البنود، لكن بعد تفكيك كل بند مركّب إلى مصادره المفردة -->
+  <section class="panel" style="margin-top: 22px;">
+    <div class="panel-head">
+      <h2>أكثر المصادر تكرارًا</h2>
+      <div class="hint" id="repeat-scope">—</div>
+    </div>
+    <div id="repeat-holder"><svg id="repeat-svg" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div class="series-legend">
+      <span class="series-key"><span class="series-swatch" style="background:var(--steel-500)"></span>ورد منفردًا في البند</span>
+      <span class="series-key"><span class="series-swatch" style="background:var(--series-exp)"></span>ورد ضمن بند مركّب مع مصادر أخرى</span>
+    </div>
+    <div class="chart-note" style="margin-top:0">
+      كل بند مركّب (مثل «تأمينات، خامات») محسوب مرة واحدة لكل مصدر ذُكر فيه.
+      فمثلاً <b>مصروف العمال</b> ورد منفردًا في بنود، وورد مع مصادر أخرى في بنود أخرى، والإجمالي هو مجموعهما.
+      الأرقام هنا عدٌّ مضبوط، بلا مبالغ ولا تقديرات.
+    </div>
+  </section>
+
+  <section class="table-panel">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:44px">#</th>
+            <th>المصدر</th>
+            <th class="num-col">منفردًا</th>
+            <th class="num-col">ضمن بند مركّب</th>
+            <th class="num-col">إجمالي التكرارات</th>
+            <th style="width:160px">نصيبه من مرات التكرار</th>
+          </tr>
+        </thead>
+        <tbody id="atomic-tbl-body"></tbody>
+      </table>
+    </div>
+    <div class="chart-note" id="atomic-note"></div>
   </section>
 
   <section class="panel" style="margin-top: 22px;">
@@ -662,6 +721,11 @@ function render() {
   document.getElementById('legend-n-other').textContent = otherSlice.n_sources;
 
   renderRegularStat();
+  const amountsScope = document.getElementById('amounts-scope');
+  if (amountsScope) {
+    amountsScope.innerHTML = `${DATA.n_rows} بندًا في ${DATA.n_sheets} كشف مصروفات · ` +
+      `من ${arDate(DATA.date_from)} إلى ${arDate(DATA.date_to)} · إجمالي ${fmt(DATA.grand_total)}`;
+  }
   renderTable(slices);
 }
 
@@ -686,6 +750,171 @@ function renderRegularStat() {
   document.getElementById('stat-regular-k').textContent =
     `${name} — ${ratesText} · ${rows.length} شهر (خارج الإجمالي)`;
   pill.hidden = false;
+}
+
+// ── Most-repeated sources, as stacked bars ──────────────────────────────────
+// Counts only — how often a source is written down, never how much it cost.
+// Each bar splits into the times the source stood alone on a line and the
+// times it shared one, because a source that is never written alone (محروقات)
+// is a different kind of fact from one that always is (قبض العمال).
+const REPEAT_TOP_N = 15;
+
+function renderRepeatChart() {
+  const svg = document.getElementById('repeat-svg');
+  if (!svg) return;
+  const acc = new Map();
+  ROWS.forEach(r => {
+    const parts = splitSources(r.source);
+    parts.forEach(name => {
+      const a = acc.get(name) || { name, solo: 0, mixed: 0 };
+      if (parts.length === 1) a.solo++; else a.mixed++;
+      acc.set(name, a);
+    });
+  });
+  const allMentions = [...acc.values()].reduce((n, a) => n + a.solo + a.mixed, 0) || 1;
+  const list = [...acc.values()]
+    .sort((a, b) => (b.solo + b.mixed) - (a.solo + a.mixed) || a.name.localeCompare(b.name, 'ar'))
+    .slice(0, REPEAT_TOP_N);
+  if (!list.length) return;
+
+  const scope = document.getElementById('repeat-scope');
+  if (scope) {
+    const shown = list.reduce((n, a) => n + a.solo + a.mixed, 0);
+    scope.innerHTML = `أعلى ${list.length} مصدرًا تكرارًا · ${DATA.n_sheets} كشف مصروفات · ` +
+      `من ${arDate(DATA.date_from)} إلى ${arDate(DATA.date_to)} · ` +
+      `تغطي ${pct(shown / allMentions)}% من مجموع ${allMentions} تكرارًا`;
+  }
+
+  svg.innerHTML = '';
+  const rowH = 32, mTop = 10, mBottom = 26, mRight = 170, mLeft = 96;
+  const VW = 1000, VH = mTop + list.length * rowH + mBottom;
+  svg.setAttribute('viewBox', `0 0 ${VW} ${VH}`);
+  const plotW = VW - mLeft - mRight;
+  const max = Math.max(...list.map(a => a.solo + a.mixed));
+  // RTL: bars grow from the right edge leftwards, names sit to their right.
+  const xStart = VW - mRight;
+  const wAt = n => (n / max) * plotW;
+
+  const soloColor = cssVar('--steel-500'), mixColor = cssVar('--series-exp');
+
+  list.forEach((a, i) => {
+    const y = mTop + i * rowH;
+    const h = 18;
+    const total = a.solo + a.mixed;
+
+    // dir=rtl page: "start" is the RIGHT edge for Arabic text, so the name
+    // grows leftwards from the margin instead of off the canvas.
+    const name = el('text', { x: VW - 8, y: y + h - 3, 'text-anchor': 'start', style: 'font-size:13px;direction:rtl', fill: cssVar('--ink') });
+    name.textContent = a.name;
+    svg.appendChild(name);
+
+    let x = xStart;
+    [[a.solo, soloColor], [a.mixed, mixColor]].forEach(([n, color]) => {
+      if (!n) return;
+      const w = wAt(n);
+      const rect = el('rect', { x: x - w, y: y, width: w, height: h, fill: color, rx: 3 });
+      rect.addEventListener('mousemove', e => showTooltipHTML(e,
+        `<div class="tt-title">${a.name}</div>` +
+        `<div class="tt-row"><span class="tt-key"><i style="background:${soloColor}"></i>منفردًا</span><span class="num">${a.solo}</span></div>` +
+        `<div class="tt-row"><span class="tt-key"><i style="background:${mixColor}"></i>ضمن بند مركّب</span><span class="num">${a.mixed}</span></div>` +
+        `<div class="tt-note">الإجمالي ${total} مرة · ${pct(total / allMentions)}% من مجموع التكرارات</div>`));
+      rect.addEventListener('mouseleave', hideTooltip);
+      svg.appendChild(rect);
+      x -= w;
+    });
+
+    const count = el('text', { x: x - 8, y: y + h - 3, 'text-anchor': 'end', style: 'font-size:12.5px;font-weight:700;direction:ltr', fill: cssVar('--ink-muted') });
+    count.textContent = total;
+    svg.appendChild(count);
+
+    // Share of all mentions, same denominator as the table below.
+    const share = el('text', { x: x - 44, y: y + h - 3, 'text-anchor': 'end', style: 'font-size:11.5px;direction:ltr', fill: cssVar('--ink-faint') });
+    share.textContent = pct(total / allMentions) + '%';
+    svg.appendChild(share);
+  });
+
+  // Axis ticks along the bottom, counting leftwards from the right edge.
+  const step = max <= 10 ? 2 : max <= 20 ? 5 : 10;
+  for (let v = 0; v <= max; v += step) {
+    const x = xStart - wAt(v);
+    svg.appendChild(el('line', { x1: x, x2: x, y1: mTop, y2: mTop + list.length * rowH - (rowH - 18), stroke: cssVar('--border-soft'), 'stroke-width': 1, 'stroke-dasharray': '2 4' }));
+    const t = el('text', { x: x, y: VH - 8, 'text-anchor': 'middle', style: 'font-size:10.5px', fill: cssVar('--ink-faint') });
+    t.textContent = v;
+    svg.appendChild(t);
+  }
+}
+
+// ── Single sources, compound lines broken apart ─────────────────────────────
+// A line like "تأمينات، تكاليف بلبيس، خامات" is one 130,000 payment covering
+// three things, and the paper never says how it splits. So each source gets
+// two figures and the reader picks: the FULL amount of every line naming it
+// (an upper bound — those columns deliberately sum to more than total spend),
+// and an equal split of each line across its sources (a lower-bound estimate
+// that does sum to the grand total, which is why the percentage uses it).
+function splitSources(text) {
+  // Split on "،" but not inside brackets — "إيجار(طوخ ، بلبيس)" is one source.
+  const out = [];
+  let depth = 0, cur = '';
+  for (const ch of String(text || '')) {
+    if (ch === '(' || ch === '[') depth++;
+    else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1);
+    if (ch === '،' && depth === 0) { out.push(cur); cur = ''; } else cur += ch;
+  }
+  out.push(cur);
+  return out.map(s => s.trim()).filter(Boolean);
+}
+
+function renderAtomicTable() {
+  const tbody = document.getElementById('atomic-tbl-body');
+  if (!tbody) return;
+  const acc = new Map();
+  let compoundLines = 0, compoundTotal = 0;
+  ROWS.forEach(r => {
+    const parts = splitSources(r.source);
+    if (!parts.length) return;
+    if (parts.length > 1) { compoundLines++; compoundTotal += r.amount || 0; }
+    const share = (r.amount || 0) / parts.length;
+    parts.forEach(name => {
+      const a = acc.get(name) || { name, count: 0, full: 0, split: 0, soloCount: 0 };
+      a.count++;
+      a.full += r.amount || 0;
+      a.split += share;
+      if (parts.length === 1) a.soloCount++;
+      acc.set(name, a);
+    });
+  });
+
+  // Sorted by how often a source appears, not by money — this table answers
+  // "what keeps coming up", and every number in it is a plain count.
+  const list = [...acc.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'ar'));
+  const totalMentions = list.reduce((s, a) => s + a.count, 0) || 1;
+  tbody.innerHTML = '';
+  list.forEach((a, i) => {
+    const share = a.count / totalMentions;
+    const mixed = a.count - a.soloCount;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="rank">${i + 1}</td>
+      <td class="src-name">${a.name}</td>
+      <td class="num-col num">${a.soloCount || '—'}</td>
+      <td class="num-col num">${mixed || '—'}</td>
+      <td class="num-col num"><b>${a.count}</b></td>
+      <td>
+        <div class="share-bar-wrap">
+          <div class="share-bar-track"><div class="share-bar-fill" style="width:${(share * 100).toFixed(1)}%; background:var(--steel-500)"></div></div>
+          <span class="num" style="font-size:12px;color:var(--ink-muted);min-width:38px">${pct(share)}%</span>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  const note = document.getElementById('atomic-note');
+  if (note) {
+    note.innerHTML =
+      `${list.length} مصدرًا مفردًا، ذُكرت ${totalMentions} مرة في ${ROWS.length} بندًا. ` +
+      `منها <b>${compoundLines}</b> بندًا مركّبًا ذُكر فيه أكثر من مصدر، ولذلك مجموع التكرارات أكبر من عدد البنود. ` +
+      `«نصيبه من مرات التكرار» = حصة المصدر من مجموع التكرارات، وليس من المبالغ.`;
+  }
 }
 
 // ── Bank balance curve ──────────────────────────────────────────────────────
@@ -825,7 +1054,6 @@ function renderTable(slices) {
       <td class="src-name">${d.label}${d.other ? ` <span style="color:var(--ink-faint);font-weight:400">(${d.n_sources} مصدرًا)</span>` : ''}</td>
       <td>${badge}</td>
       <td class="num-col num">${fmt(d.value)}</td>
-      <td class="num-col num">${d.count}</td>
       <td>
         <div class="share-bar-wrap">
           <div class="share-bar-track"><div class="share-bar-fill" style="width:${(share * 100).toFixed(1)}%; background:${d.fill}"></div></div>
@@ -1037,6 +1265,11 @@ function renderMonthlyLineChart() {
 function renderMonthlyTable() {
   const dark = isDarkMode();
   const data = computeMonthlyTotals();
+  const scope = document.getElementById('months-scope');
+  if (scope) {
+    scope.innerHTML = `${data.length} شهرًا · من ${arDate(DATA.date_from)} إلى ${arDate(DATA.date_to)} · ` +
+      `إجمالي ${fmt(DATA.grand_total)}`;
+  }
   const tbody = document.getElementById('month-tbl-body');
   tbody.innerHTML = '';
   data.forEach((d, i) => {
@@ -1154,6 +1387,8 @@ renderMonthlyBarChart();
 renderMonthlyLineChart();
 renderBankLineChart();
 renderBalanceChart();
+renderRepeatChart();
+renderAtomicTable();
 renderMonthlyTable();
 const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -1165,6 +1400,8 @@ function refreshAll() {
   renderMonthlyLineChart();
   renderBankLineChart();
   renderBalanceChart();
+  renderRepeatChart();
+  renderAtomicTable();
   renderMonthlyTable();
 } catch (err) {
   document.body.innerHTML =
